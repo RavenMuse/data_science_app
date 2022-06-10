@@ -45,7 +45,7 @@ class DataToolsApp:
         )
 
         # menu picture
-        st.sidebar.image('menu.jpeg')
+        # st.sidebar.image('menu.jpeg')
     
         # app_info
         main_info=st.container()
