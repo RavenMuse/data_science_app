@@ -4,6 +4,10 @@ import streamlit as st
 # import plotly.express as px
 # import time
 from .tools import Tools
+import sys  # 加了这了
+
+sys.path.append("..")
+from func.feature_func import FeatureFunction as ff
 
 
 class FeatureTools(Tools):
@@ -24,6 +28,8 @@ class FeatureTools(Tools):
         self.add_tool_func('fill_na', self.fill_na)
         ex.checkbox("正则化", key='normalize')
         self.add_tool_func('normalize', self.normalize)
+        ex.checkbox("去噪", key='denoising')
+        self.add_tool_func('denoising', self.denoising)
 
     def fill_na(self, data):
         tool = st.expander('空值填充', True)
@@ -31,4 +37,12 @@ class FeatureTools(Tools):
 
     def normalize(self, data):
         tool = st.expander('正则化', True)
+        with tool:
+            cols = st.multiselect(
+                'z-score正则化',
+                data.select_dtypes(exclude=['object']).columns)
+            ff.z_scores_std(data, cols)
+
+    def denoising(self, data):
+        tool = st.expander('去噪', True)
         tool.write('coding')

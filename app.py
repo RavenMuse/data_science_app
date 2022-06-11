@@ -1,11 +1,15 @@
 from faulthandler import disable
 import pandas as pd
 import streamlit as st
+from pandasql import sqldf
 from tools.feature_tools import FeatureTools
 from tools.stats_tools import StatsTools
+import plotly.figure_factory as ff
 import warnings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
+
+global DATA
 
 
 class DataToolsApp:
@@ -53,9 +57,12 @@ class DataToolsApp:
             一个简单实用的数据科学工具集，左侧菜单是数据工具列表，在此之前您需要选择一个数据集，才能开启数据探索之旅！
             """)
 
-        # data_unload
-        uploaded_panel = st.expander("数据上传", True)
-        uploaded_file = uploaded_panel.file_uploader('选择一个数据文件', type='csv')
+        # data_set
+        data_panel = st.expander("数据源", True)
+        # uploaded_file = data_panel.file_uploader('选择一个数据文件', type='csv')
+
+        orgin_data = pd.read_csv('/data/data_science_app/test_sample.csv')
+
         st.sidebar.markdown("""
         """)
 
@@ -66,7 +73,15 @@ class DataToolsApp:
         #     data = pd.read_csv(uploaded_file)
         #     for tools in self.__tools_set:
         #         tools.use_tool(data)
-        data = pd.read_csv('/data/data_science_app/test_sample.csv')
+        # data = pd.read_csv('/data/data_science_app/test_sample.csv')
+        sql = data_panel.text_area('SQL', 'select * from orgin_data')
+        try:
+            data = sqldf(sql, locals())
+        except:
+            st.error('SQL无效！')
+            return
+        data_panel.write(data)
+
         for tools in self.__tools_set:
             tools.use_tool(data)
 
@@ -77,7 +92,7 @@ class DataToolsApp:
 
 
 app = DataToolsApp()
-app.add_tool(StatsTools())
 app.add_tool(FeatureTools())
+app.add_tool(StatsTools())
 
 app.run()
