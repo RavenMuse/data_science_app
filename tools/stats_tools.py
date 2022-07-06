@@ -20,10 +20,22 @@ class StatsTools(Tools):
         ex.markdown("##### 基础分析")
         ex.checkbox("数据概览", key='data_info')
         self.add_tool_func('data_info', self.data_info)
-        ex.checkbox("列分析", key='col_analysis')
-        self.add_tool_func('col_analysis', self.col_analysis)
+        ex.checkbox("单维分析", key='single_dim_analysis')
+        self.add_tool_func('single_dim_analysis', self.single_dim_analysis)
         ex.checkbox("多列分析", key='cols_analysis')
         self.add_tool_func('cols_analysis', self.cols_analysis)
+        # ex.markdown("##### 综合分析")
+        # ex.checkbox("topsis分析", key='cols_analysis')
+        # self.add_tool_func('cols_analysis', self.cols_analysis)
+        # ex.checkbox("主成分分析", key='cols_analysis')
+        # self.add_tool_func('cols_analysis', self.cols_analysis)
+        # ex.checkbox("因子分析", key='cols_analysis')
+        # self.add_tool_func('cols_analysis', self.cols_analysis)
+        # ex.markdown("##### 预测分析")
+        # ex.checkbox("分类预测", key='cols_analysis')
+        # self.add_tool_func('cols_analysis', self.cols_analysis)
+        # ex.checkbox("数值预测", key='cols_analysis')
+        # self.add_tool_func('cols_analysis', self.cols_analysis)
 
     def data_info(self, data):
 
@@ -75,9 +87,9 @@ class StatsTools(Tools):
             with col2:
                 st.table(data.describe())
 
-    def col_analysis(self, data):
-        with st.expander('列分析', True):
-            col_selected = st.selectbox("请选择一列", data.columns)
+    def single_dim_analysis(self, data):
+        with st.expander('单维分析', True):
+            col_selected = st.selectbox("请选择单个维度", data.columns)
             col_data = data[col_selected]
             if col_data.dtype.name == 'object':
                 st.write(f"""统计量
@@ -95,10 +107,11 @@ class StatsTools(Tools):
                                                use_container_width=True)
             else:
                 col_stats = np.round(col_data.describe(), 2).to_dict()
-
+                varity = 0 if col_stats['mean'] == 0 else np.round(
+                    col_stats['std'] / col_stats['mean'], 2)
                 st.write(f"""统计量
 
-                合计：{np.round(col_data.sum(),2)}  非空数据量：{col_stats['count'] }   均值：{col_stats['mean']}   方差：{col_stats['std']}    最小值：{col_stats['min']}   最大值：{col_stats['max']} """
+                合计：{np.round(col_data.sum(),2)}  非空数据量：{col_stats['count'] }   均值：{col_stats['mean']}   标准差：{col_stats['std']}  异变系数：{varity}   最小值：{col_stats['min']}   最大值：{col_stats['max']} """
                          )
                 col_analysis_col1, col_analysis_col2 = st.columns(2)
                 col_analysis_col1.plotly_chart(px.box(col_data),

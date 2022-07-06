@@ -12,6 +12,7 @@ import operator
 from datetime import *
 from plotly.graph_objs import *
 from scipy import sparse
+from scipy import stats
 
 
 class FeatureFunction:
@@ -173,6 +174,30 @@ class FeatureFunction:
             data_frame.loc[:, col] = data_frame[col].astype(float)
             data_frame.loc[:, col] -= data_frame[col].mean()
             data_frame.loc[:, col] /= data_frame[col].std()
+
+    @staticmethod
+    def max_min_std(data_frame, cols):
+        """
+        Max-Min标准化
+        :param data_frame:
+        :param cols:
+        """
+        for col in cols:
+            data_frame.loc[:, col] = data_frame[col].astype(float)
+            data_frame.loc[:, col] = (data_frame.loc[:, col] - np.min(
+                data_frame.loc[:, col])) / np.ptp(data_frame.loc[:, col])
+
+    @staticmethod
+    def outlier_denoising(data_frame, cols):
+        """
+        离群点去噪
+        :param data_frame:
+        :param cols:
+        """
+        for col in cols:
+            data_frame.loc[:, col] = data_frame[col].astype(float)
+            data_frame.loc[:, col] = (data_frame.loc[:, col] - np.min(
+                data_frame.loc[:, col])) / np.ptp(data_frame.loc[:, col])
 
     @staticmethod
     def similarity(a, b, n=4):

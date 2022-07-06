@@ -1,4 +1,8 @@
 from faulthandler import disable
+
+import streamlit as st
+import streamlit_authenticator as stauth
+import os
 import pandas as pd
 import streamlit as st
 from pandasql import sqldf
@@ -9,19 +13,21 @@ import warnings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
-global DATA
-
 
 class DataToolsApp:
 
     def __init__(self):
         self.__tools_set = []
-
-    def add_tool(self, tool):
-        self.__tools_set.append(tool)
-
-    def run(self):
-        # config
+        self.__credentials = {
+            'usernames': {
+                'admin': {
+                    'name': 'admin',
+                    'password': stauth.Hasher(['hmyzch']).generate()[0]
+                }
+            }
+        }
+        self.__authentication_status = None
+        self.__authenticator = None
         st.set_page_config(
             page_title="数据实验台",
             layout="wide",
@@ -31,6 +37,27 @@ class DataToolsApp:
                 'Report a bug': "https://www.extremelycoolapp.com/bug",
                 'About': "# This is a header. This is an *extremely* cool app!"
             })
+
+    def authenticate(self):
+        ### https://github.com/mkhorasani/Streamlit-Authenticator
+        self.__authenticator = stauth.Authenticate(self.__credentials,
+                                                   'some_cookie_name',
+                                                   'some_signature_key')
+        name, self.__authentication_status, username = self.__authenticator.login(
+            'Login', 'main')
+
+    def add_tool(self, tool):
+        self.__tools_set.append(tool)
+
+    def run(self):
+        self.authenticate()
+        if self.__authentication_status == False:
+            st.error('Username/password is incorrect')
+            return
+        if self.__authentication_status == None:
+            st.warning('Please enter your username and password')
+            return
+
         st.markdown(
             """
             <style>
@@ -47,9 +74,23 @@ class DataToolsApp:
         )
 
         # menu picture
-        # st.sidebar.image('menu.jpeg')
+        # st.write(os.path.abspath('.'))
+        # st.sidebar.image('/data/data_science_app/menu.jpg')
 
-        # app_info
+        st.sidebar.markdown("""
+        """)
+
+        # menu
+        for tools in self.__tools_set:
+            tools.layout_menu()
+
+        ## menu info
+        side_bar_info = st.sidebar.container()
+        with side_bar_info:
+            st.markdown("""---""")
+
+        # main
+        ## app_info
         main_info = st.container()
         with main_info:
             st.markdown("""
@@ -62,13 +103,6 @@ class DataToolsApp:
         # uploaded_file = data_panel.file_uploader('选择一个数据文件', type='csv')
 
         orgin_data = pd.read_csv('/data/data_science_app/test_sample.csv')
-
-        st.sidebar.markdown("""
-        """)
-
-        # menu
-        for tools in self.__tools_set:
-            tools.layout_menu()
         # if uploaded_file is not None:
         #     data = pd.read_csv(uploaded_file)
         #     for tools in self.__tools_set:
@@ -78,17 +112,13 @@ class DataToolsApp:
         try:
             data = sqldf(sql, locals())
         except:
-            st.error('SQL无效！')
+            st.error('无效的查询')
             return
         data_panel.write(data)
 
         for tools in self.__tools_set:
             tools.use_tool(data)
-
-        ## mean info
-        side_bar_info = st.sidebar.container()
-        with side_bar_info:
-            st.markdown("""---""")
+        self.__authenticator.logout('Logout', 'main')
 
 
 app = DataToolsApp()
