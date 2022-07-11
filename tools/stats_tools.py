@@ -22,8 +22,8 @@ class StatsTools(Tools):
         self.add_tool_func('data_info', self.data_info)
         ex.checkbox("单维分析", key='single_dim_analysis')
         self.add_tool_func('single_dim_analysis', self.single_dim_analysis)
-        ex.checkbox("多列分析", key='cols_analysis')
-        self.add_tool_func('cols_analysis', self.cols_analysis)
+        ex.checkbox("多维分析", key='multi_dim_analysis')
+        self.add_tool_func('multi_dim_analysis', self.multi_dim_analysis)
         # ex.markdown("##### 综合分析")
         # ex.checkbox("topsis分析", key='cols_analysis')
         # self.add_tool_func('cols_analysis', self.cols_analysis)
@@ -41,7 +41,7 @@ class StatsTools(Tools):
 
         with st.expander('数据概览', True):
             tmp1, over_view_col1, over_view_col2, over_view_col3, tmp2 = st.columns(
-                [0.1, 0.8, 0.6, 2, 0.1])
+                [0.1, 0.25, 0.25, 0.25, 0.1])
             with over_view_col1:
                 st.metric(label="数据量", value=len(data))
             with over_view_col2:
@@ -53,7 +53,7 @@ class StatsTools(Tools):
                     f"{np.round(data.memory_usage(index=True, deep=True).sum()/1028,2)} Kb"
                 )
             st.write("数值分析")
-            tmp1, col1, col2, tmp2 = st.columns([0.1, 0.5, 0.6, 0.1])
+            col1, col2 = st.columns([0.5, 0.6])
             with col1:
                 info_table = pd.DataFrame({
                     '列名':
@@ -66,7 +66,7 @@ class StatsTools(Tools):
                         data.memory_usage(index=False, deep=True) / 1028,
                         2).astype(str) + 'Kb').values
                 })
-                st.table(info_table)
+                st.write(info_table)
                 # info_table = go.Figure(data=[
                 #     go.Table(
                 #         header=dict(values=['列名', '非空数据量', '类型', '内存占用量'],
@@ -85,7 +85,7 @@ class StatsTools(Tools):
                 #                          margin=dict(t=0, l=10, r=10, b=0))
                 # st.plotly_chart(info_table, use_container_width=True)
             with col2:
-                st.table(data.describe())
+                st.write(data.describe())
 
     def single_dim_analysis(self, data):
         with st.expander('单维分析', True):
@@ -120,21 +120,46 @@ class StatsTools(Tools):
                                                             text_auto=True),
                                                use_container_width=True)
 
-    def cols_analysis(self, data):
-        with st.expander('多列分析', True):
-            col_selected = st.multiselect('请选择两列', data.columns)
-            if len(col_selected) != 2:
-                return
-            col_data = data[col_selected]
-            # col_selected = st.selectbox("请选择一列", data.columns)
-            col1, col2 = st.columns(2)
+    def multi_dim_analysis(self, data):
+        with st.expander('多维分析', True):
+            col1, col2 = st.columns([0.3, 0.7])
+            chart_type_dict = {
+                'scatter': '散点图',
+                'line': '折线图',
+                'bar': '柱状图',
+                'violin': '提琴图'
+            }
+            chart_type, _ = col1.selectbox("图表",
+                                           chart_type_dict.items(),
+                                           format_func=lambda x: x[1])
 
-            col1.plotly_chart(
-                px.scatter(col_data, x=col_selected[0], y=col_selected[1]))
-            # px.pie(col_data.value_counts().to_frame(
-            #     name='count').reset_index(),
-            #     values='count',
-            #     names='index'))
-            # col_analysis_col2.plotly_chart(px.histogram(col_data,
-            #                                             marginal='box'),
-            #                             use_container_width=True)
+            numeric_cols = data.select_dtypes(exclude=['object']).columns
+            object_cols = data.select_dtypes(include=['object']).columns
+            if chart_type == 'scatter':
+                x_col = col1.selectbox("X", data.columns)
+                y_col = col1.selectbox("Y", data.columns, index=1)
+
+                size_color = col1.multiselect('Size/Color', numeric_cols)
+                size = size_color[0] if len(size_color) >= 1 else None
+                color = size_color[1] if len(size_color) >= 2 else None
+                fig = px.scatter(data,
+                                 x=x_col,
+                                 y=y_col,
+                                 size=size,
+                                 color=color)
+            if chart_type == 'bar':
+                x_col = col1.selectbox("X", data.columns)
+                y_col = col1.selectbox("Y", data.columns, index=1)
+                fig = px.bar(data, x=x_col, y=y_col)
+
+            if chart_type == 'line':
+                x_col = col1.selectbox("X", data.columns)
+                y_col = col1.selectbox("Y", data.columns, index=1)
+                fig = px.line(data, x=x_col, y=y_col)
+
+            if chart_type == 'violin':
+                x_col = col1.selectbox("X", object_cols)
+                y_col = col1.selectbox("Y", numeric_cols, index=1)
+                fig = px.violin(data, x=x_col, y=y_col)
+
+            col2.plotly_chart(fig, use_container_width=True)

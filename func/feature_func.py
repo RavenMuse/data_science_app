@@ -22,40 +22,6 @@ class FeatureFunction:
     """
 
     @staticmethod
-    def freq_analyze(data_frame, field_col='', target_col='', barmode='stack'):
-        """
-        频率分布分析
-        :param data_frame:数据源
-        :param field_col:需要分析的字段
-        :param target_col:分类字段
-        :param barmode:统计条显示方式
-        :return:
-        """
-        if field_col is not '':
-            data = []
-            if target_col is not '':
-                class_tag = list(data_frame[target_col].drop_duplicates())
-                for cls in class_tag:
-                    freq_data_part = eval('data_frame[data_frame.%s == %s]' %
-                                          (target_col, cls))
-                    freq_data = pd.DataFrame(freq_data_part[field_col].
-                                             value_counts()).reset_index()
-                    data.append((freq_data['index'], freq_data[field_col]))
-
-                ChartTools.plot_bar(data=data,
-                                    traces=class_tag,
-                                    title="Frequency_Analyze",
-                                    barmode=barmode)
-            else:
-                freq_data = pd.DataFrame(
-                    data_frame[field_col].value_counts()).reset_index()
-                data.append((freq_data['index'], freq_data[field_col]))
-                ChartTools.plot_bar(data=data,
-                                    traces=[field_col],
-                                    title="Frequency_Analyze",
-                                    barmode=barmode)
-
-    @staticmethod
     def chi2_test(array, min_expected_value):
         """
         对观测结果做卡方校验
@@ -86,32 +52,6 @@ class FeatureFunction:
         return chi2
 
     @staticmethod
-    def show_feature_importance(feature_list,
-                                importance_list,
-                                return_importance_df=False):
-        """
-        统计特征重要性
-        :param feature_list:特征名列表
-        :param importance_list:特征重要性列表（与特征名列表同序）
-        :param return_importance_df:是否返回重要性表
-        :return: feature_df
-        """
-
-        feature_df = pd.DataFrame()
-        feature_df['feature'] = feature_list
-        feature_df['importance'] = importance_list
-        feature_df.sort_values(by=['importance'], ascending=True, inplace=True)
-
-        ChartTools.plot_bar(
-            [(feature_df['importance'], feature_df['feature'])],
-            traces=['importance'],
-            title='feature_importance',
-            orientation='h')
-
-        if return_importance_df:
-            return feature_df
-
-    @staticmethod
     def show_confusion_matrix(y_predict, y_true, col_name, normalize=False):
         """
         绘制并返回混淆矩阵
@@ -137,14 +77,22 @@ class FeatureFunction:
         return cnf_matrix
 
     @staticmethod
-    def show_null_feature_rank(data_frame):
+    def fill_na(data_frame, cols, strategy='mean'):
         """
-        显示包含空值特征排行
-        :param data_frame:pandas df
-        :return:pandas series
+        空值填充
+        :param data_frame:
+        :param cols:
+        :param type:填充方式
         """
-        temp = data_frame.isnull().sum()
-        return temp[temp > 0].sort_values(ascending=False)
+        for col in cols:
+
+            if strategy == 'mean':
+                data_frame[col].fillna(data_frame[col].mean(), inplace=True)
+            if strategy == 'median':
+                data_frame[col].fillna(data_frame[col].median(), inplace=True)
+            if strategy == 'most_frequent':
+                data_frame[col].fillna(data_frame[col].value_counts().index[0],
+                                       inplace=True)
 
     @staticmethod
     def dummies(data_frame, cols, drop_cols=True):
@@ -168,7 +116,6 @@ class FeatureFunction:
         Z-Scores标准化
         :param data_frame:
         :param cols:
-        :return: 标准化的数据集
         """
         for col in cols:
             data_frame.loc[:, col] = data_frame[col].astype(float)
@@ -190,14 +137,18 @@ class FeatureFunction:
     @staticmethod
     def outlier_denoising(data_frame, cols):
         """
-        离群点去噪
+        离群点降噪
         :param data_frame:
         :param cols:
         """
         for col in cols:
-            data_frame.loc[:, col] = data_frame[col].astype(float)
-            data_frame.loc[:, col] = (data_frame.loc[:, col] - np.min(
-                data_frame.loc[:, col])) / np.ptp(data_frame.loc[:, col])
+            val = data_frame[col].astype(float)
+            q1 = np.quantile(val, q=0.25)
+            q3 = np.quantile(val, q=0.75)
+            up = q3 + 1.5 * (q3 - q1)
+            low = q1 - 1.5 * (q3 - q1)
+            data_frame.loc[(data_frame[col] > up) | (data_frame[col] < low),
+                           col] = None
 
     @staticmethod
     def similarity(a, b, n=4):

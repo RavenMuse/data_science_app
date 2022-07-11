@@ -70,8 +70,9 @@ class DataToolsApp:
                 reindent=True,
                 keyword_case='upper')
 
+        cols = ',\n'.join(orgin_data.columns)
         sql = data_panel.text_area('SQL',
-                                   "SELECT *\nFROM orgin_data\nLIMIT 20",
+                                   f"SELECT {cols}\nFROM orgin_data\nLIMIT 20",
                                    key='sql_input',
                                    on_change=__sql_format)
         try:
