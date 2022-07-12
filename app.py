@@ -52,6 +52,7 @@ class DataToolsApp:
         return True
 
     def __get_data(self):
+
         data_panel = st.expander("数据源", True)
         path = data_panel.file_uploader('选择一个数据文件', type='csv')
 
@@ -74,7 +75,8 @@ class DataToolsApp:
         sql = data_panel.text_area('SQL',
                                    f"SELECT {cols}\nFROM orgin_data\nLIMIT 20",
                                    key='sql_input',
-                                   on_change=__sql_format)
+                                   on_change=__sql_format,
+                                   height=200)
         try:
             data = sqldf(sql, locals())
         except:

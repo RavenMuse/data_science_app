@@ -1,9 +1,15 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import sys
+from scipy import stats
 import plotly.express as px
 import plotly.graph_objects as go
+
 from .tools import Tools
+
+sys.path.append("..")
+from func.feature_func import FeatureFunction as ff
 
 
 class StatsTools(Tools):
@@ -92,26 +98,36 @@ class StatsTools(Tools):
             col_selected = st.selectbox("请选择单个维度", data.columns)
             col_data = data[col_selected]
             if col_data.dtype.name == 'object':
+                unique_count = len(col_data.unique())
                 st.write(f"""统计量
 
-                离散数：{len(col_data.unique())}
+                离散数：{unique_count}
                 """)
-                col_analysis_col1, col_analysis_col2 = st.columns(2)
-                col_analysis_col1.plotly_chart(
-                    px.pie(col_data.value_counts().to_frame(
-                        name='count').reset_index(),
-                           values='count',
-                           names='index'))
-                col_analysis_col2.plotly_chart(px.histogram(col_data,
-                                                            marginal='box'),
-                                               use_container_width=True)
+                #todo: 高离散值变量暂不进行图表分析
+                if unique_count < 100:
+                    col_analysis_col1, col_analysis_col2 = st.columns(2)
+
+                    col_analysis_col2.plotly_chart(
+                        px.pie(col_data.value_counts().to_frame(
+                            name='count').reset_index(),
+                               values='count',
+                               names='index'))
+
+                    col_analysis_col1.plotly_chart(px.histogram(
+                        col_data, marginal='box'),
+                                                   use_container_width=True)
             else:
                 col_stats = np.round(col_data.describe(), 2).to_dict()
+
                 varity = 0 if col_stats['mean'] == 0 else np.round(
                     col_stats['std'] / col_stats['mean'], 2)
+
+                kurtosis = np.round(stats.kurtosis(col_data, fisher=False), 2)
+                skew = np.round(stats.skew(col_data), 2)
+
                 st.write(f"""统计量
 
-                合计：{np.round(col_data.sum(),2)}  非空数据量：{col_stats['count'] }   均值：{col_stats['mean']}   标准差：{col_stats['std']}  异变系数：{varity}   最小值：{col_stats['min']}   最大值：{col_stats['max']} """
+                合计：{np.round(col_data.sum(),2)}  均值：{col_stats['mean']}  标准差：{col_stats['std']}  异变系数：{varity}  峰度：{kurtosis} 偏度：{skew} 最小值：{col_stats['min']} 25%：{col_stats['25%']}  50%：{col_stats['50%']}  75%：{col_stats['75%']}  最大值：{col_stats['max']} """
                          )
                 col_analysis_col1, col_analysis_col2 = st.columns(2)
                 col_analysis_col1.plotly_chart(px.box(col_data),
@@ -136,17 +152,21 @@ class StatsTools(Tools):
             numeric_cols = data.select_dtypes(exclude=['object']).columns
             object_cols = data.select_dtypes(include=['object']).columns
             if chart_type == 'scatter':
-                x_col = col1.selectbox("X", data.columns)
-                y_col = col1.selectbox("Y", data.columns, index=1)
+                x = col1.selectbox("X", data.columns)
+                y = col1.selectbox("Y", data.columns, index=1)
 
-                size_color = col1.multiselect('Size/Color', numeric_cols)
-                size = size_color[0] if len(size_color) >= 1 else None
-                color = size_color[1] if len(size_color) >= 2 else None
+                text = col1.selectbox(
+                    'Text', object_cols) if not object_cols.empty else None
+                size = col1.multiselect('Size', numeric_cols)
+                color = col1.multiselect('Color', data.columns)
+                color = color[0] if len(color) == 1 else None
+                size = size[0] if len(size) == 1 else None
                 fig = px.scatter(data,
-                                 x=x_col,
-                                 y=y_col,
+                                 x=x,
+                                 y=y,
                                  size=size,
-                                 color=color)
+                                 color=color,
+                                 hover_name=text)
             if chart_type == 'bar':
                 x_col = col1.selectbox("X", data.columns)
                 y_col = col1.selectbox("Y", data.columns, index=1)
@@ -158,8 +178,11 @@ class StatsTools(Tools):
                 fig = px.line(data, x=x_col, y=y_col)
 
             if chart_type == 'violin':
-                x_col = col1.selectbox("X", object_cols)
-                y_col = col1.selectbox("Y", numeric_cols, index=1)
-                fig = px.violin(data, x=x_col, y=y_col)
+                if not object_cols.empty:
+                    x_col = col1.selectbox("X", object_cols)
+                    y_col = col1.selectbox("Y", numeric_cols, index=1)
+                    fig = px.violin(data, x=x_col, y=y_col)
+                else:
+                    fig = None
 
             col2.plotly_chart(fig, use_container_width=True)
