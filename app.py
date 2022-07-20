@@ -11,7 +11,8 @@ from pandasql import sqldf
 from datetime import datetime, timedelta
 from authenticate import Authenticate
 from tools.feature_tools import FeatureTools
-from tools.stats_tools import StatsTools
+from tools.statistics_tools import StatisticsTools
+from tools.machine_learning_tools import MachineLearingTools
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -53,45 +54,61 @@ class DataToolsApp:
 
     def __get_data(self):
 
-        data_panel = st.expander("数据源", True)
-        path = data_panel.file_uploader('选择一个数据文件', type='csv')
+        with st.expander("数据源", True):
+            path = st.file_uploader('选择一个数据文件', type='csv')
 
-        @st.cache(allow_output_mutation=True)
-        def __load_data(path=None):
-            return pd.read_csv(path)
+            @st.cache(allow_output_mutation=True)
+            def __load_data(path=None):
+                return pd.read_csv(path)
 
-        if not path:
-            orgin_data = __load_data('/data/data_science_app/test_sample.csv')
-        else:
-            orgin_data = __load_data(path)
+            if not path:
+                orgin_data = __load_data(
+                    '/data/data_science_app/test_sample.csv')
+                file_name = 'test_sample.csv'
+            else:
+                orgin_data = __load_data(path)
+                file_name = path.name
 
-        def __sql_format():
-            st.session_state.sql_input = sqlparse.format(
-                st.session_state.sql_input,
-                reindent=True,
-                keyword_case='upper')
+            def __sql_format():
+                st.session_state.sql_input = sqlparse.format(
+                    st.session_state.sql_input,
+                    reindent=True,
+                    keyword_case='upper')
 
-        cols = ',\n'.join(orgin_data.columns)
-        sql = data_panel.text_area('SQL',
-                                   f"SELECT {cols}\nFROM orgin_data\nLIMIT 20",
-                                   key='sql_input',
-                                   on_change=__sql_format,
-                                   height=200)
-        try:
-            data = sqldf(sql, locals())
-        except:
-            st.error('无效的查询!')
-            return None
-        data_panel.write(data)
-        return data
+            cols = ',\n'.join(orgin_data.columns)
+            sql = st.text_area('SQL',
+                               f"SELECT {cols}\nFROM orgin_data\nLIMIT 20",
+                               key='sql_input',
+                               on_change=__sql_format,
+                               height=200)
+            try:
+                data = sqldf(sql, locals())
+            except:
+                st.error('无效的查询!')
+                return None
+            return data, file_name
 
-    def add_tool(self, tool):
-        self.__tools_set.append(tool)
+    def __save_data(self, data, file_name):
 
-    def run(self):
-        if not self.__login():
-            return
+        with st.expander("保存数据", False):
+            # 显示结果数据
+            st.write(data)
 
+            # 数据下载保存
+            @st.cache
+            def convert_df(data):
+                return data.to_csv(index=False, encoding='utf_8_sig')
+
+            file_name_new = st.text_input('请输入文件名：',
+                                          file_name.split('.')[0] + '_new.csv')
+            st.download_button(
+                label="下载结果数据",
+                data=convert_df(data),
+                file_name=file_name_new,
+                mime='text/csv',
+            )
+
+    def __load_style(self):
         # st.markdown(
         #     """
         # <style>
@@ -103,7 +120,35 @@ class DataToolsApp:
         # """,
         #     unsafe_allow_html=True,
         # )
+        st.markdown(
+            """
+        <style>
+        .main .block-container {
+            padding: 3rem 5rem 10rem;
+        }
+        [data-testid=stSidebar] [data-baseweb=checkbox] :last-child {
+            font-size: 0.9rem
+        }
+        [data-testid=stSidebar] .css-1siy2j7 {
+            width: 18rem
+        }
+        [data-testid=stExpander] .streamlit-expanderHeader {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        </style>
+        """,
+            unsafe_allow_html=True,
+        )
 
+    def add_tool(self, tool):
+        self.__tools_set.append(tool)
+
+    def run(self):
+        if not self.__login():
+            return
+
+        self.__load_style()
         # menu picture
         # st.write(os.path.abspath('.'))
         # st.sidebar.image('/data/data_science_app/menu.jpg')
@@ -129,55 +174,17 @@ class DataToolsApp:
             一个简单实用的数据科学工具集，左侧菜单是数据工具列表，在此之前您需要选择一个数据集，才能开启数据探索之旅！
             """)
 
-        # app_tools
-        data = self.__get_data()
+        ## app_tools
+        data, file_name = self.__get_data()
         if data is not None:
             for tools in self.__tools_set:
                 tools.use_tool(data)
+        self.__save_data(data, file_name)
 
 
 app = DataToolsApp()
 app.add_tool(FeatureTools())
-app.add_tool(StatsTools())
+app.add_tool(StatisticsTools())
+app.add_tool(MachineLearingTools())
 
 app.run()
-
-# bootstrap 4 collapse example
-# components.html(
-#     """
-#     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-#     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-#     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-#     <div id="accordion">
-#       <div class="card">
-#         <div class="card-header" id="headingOne">
-#           <h5 class="mb-0">
-#             <button class="btn btn-link" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-#             Collapsible Group Item #1
-#             </button>
-#           </h5>
-#         </div>
-#         <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
-#           <div class="card-body">
-#             Collapsible Group Item #1 content
-#           </div>
-#         </div>
-#       </div>
-#       <div class="card">
-#         <div class="card-header" id="headingTwo">
-#           <h5 class="mb-0">
-#             <button class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-#             Collapsible Group Item #2
-#             </button>
-#           </h5>
-#         </div>
-#         <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
-#           <div class="card-body">
-#             Collapsible Group Item #2 content
-#           </div>
-#         </div>
-#       </div>
-#     </div>
-#     """,
-#     height=600,
-# )

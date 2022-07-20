@@ -77,6 +77,48 @@ class FeatureFunction:
         return cnf_matrix
 
     @staticmethod
+    def number_transform(data_frame, col, coff, strategy='boxcox'):
+        """数值变换
+
+        Args:
+            data_frame (_type_): _description_
+            col (_type_): _description_
+            coff (_type_): _description_
+            strategy (str, optional): _description_. Defaults to 'boxcox'.
+        """
+        if strategy == 'move':
+            data_frame.loc[:, col + '_move'] = data_frame[col] + coff
+        if strategy == 'scale':
+            data_frame.loc[:, col + '_scale'] = data_frame[col] * coff
+        if strategy == 'boxcox':
+            if data_frame[col].min() <= 0:
+                pre_process = data_frame[col] + np.abs(
+                    data_frame[col].min()) + 0.0001
+            else:
+                pre_process = data_frame[col]
+            data_frame.loc[:, col + '_bxcx'] = stats.boxcox(pre_process, coff)
+
+    @staticmethod
+    def binning(data_frame, col, bin_num, strategy='width'):
+        """分箱
+
+        Args:
+            data_frame (pandas dataframe): 数据
+            col (str): 列
+            bins_num (int): 分箱数  
+            strategy (str, optional): 分箱策略('quantile','width'). 默认是等宽：'width'.
+        """
+
+        if strategy == 'width':
+            bins = pd.cut(data_frame[col], bins=bin_num)
+        if strategy == 'quantile':
+            bins = pd.qcut(data_frame[col], bin_num)
+        if strategy == 'cluster':
+            bins = pd.qcut(data_frame[col], bin_num)
+        data_frame.loc[:, col + '_binno'] = pd.factorize(bins, sort=True)[0]
+        data_frame.loc[:, col + '_bin'] = bins.astype(str)
+
+    @staticmethod
     def fill_na(data_frame, cols, strategy='mean'):
         """
         空值填充
@@ -95,7 +137,7 @@ class FeatureFunction:
                                        inplace=True)
 
     @staticmethod
-    def dummies(data_frame, cols, drop_cols=True):
+    def dummies(data_frame, cols):
         """
         对指定列进行哑编码
         :param data_frame:
@@ -104,11 +146,8 @@ class FeatureFunction:
         :return: 哑编码后的数据集
         """
         for col in cols:
-            dum = pd.get_dummies(data_frame[col], prefix=col)
-            data_frame = pd.concat([data_frame, dum], axis=1)
-            if drop_cols:
-                data_frame.drop(col, axis=1, inplace=True)
-        return data_frame
+            dum_df = pd.get_dummies(data_frame[col], prefix=col)
+            data_frame[dum_df.columns] = dum_df
 
     @staticmethod
     def z_scores_std(data_frame, cols):

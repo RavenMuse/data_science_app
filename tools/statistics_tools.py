@@ -5,14 +5,13 @@ import sys
 from scipy import stats
 import plotly.express as px
 import plotly.graph_objects as go
-
 from .tools import Tools
 
 sys.path.append("..")
 from func.feature_func import FeatureFunction as ff
 
 
-class StatsTools(Tools):
+class StatisticsTools(Tools):
 
     def __init__(self):
         super().__init__()
@@ -30,7 +29,17 @@ class StatsTools(Tools):
         self.add_tool_func('single_dim_analysis', self.single_dim_analysis)
         ex.checkbox("多维分析", key='multi_dim_analysis')
         self.add_tool_func('multi_dim_analysis', self.multi_dim_analysis)
-        # ex.markdown("##### 综合分析")
+        
+        ex.markdown("##### 检验分析")
+        ex.checkbox("分布检验", key='distribution_test')
+        self.add_tool_func('distribution_test', self.distribution_test)
+        ex.checkbox("方差检验", key='variance_test')
+        self.add_tool_func('variance_test', self.variance_test)
+        ex.checkbox("参数检验", key='parameter_test')
+        self.add_tool_func('parameter_test', self.parameter_test)
+        ex.checkbox("非参检验", key='non_parameter_test')
+        self.add_tool_func('non_parameter_test', self.non_parameter_test)
+        ex.markdown("##### 高级分析")
         # ex.checkbox("topsis分析", key='cols_analysis')
         # self.add_tool_func('cols_analysis', self.cols_analysis)
         # ex.checkbox("主成分分析", key='cols_analysis')
@@ -44,7 +53,6 @@ class StatsTools(Tools):
         # self.add_tool_func('cols_analysis', self.cols_analysis)
 
     def data_info(self, data):
-
         with st.expander('数据概览', True):
             tmp1, over_view_col1, over_view_col2, over_view_col3, tmp2 = st.columns(
                 [0.1, 0.25, 0.25, 0.25, 0.1])
@@ -105,17 +113,16 @@ class StatsTools(Tools):
                 """)
                 #todo: 高离散值变量暂不进行图表分析
                 if unique_count < 100:
-                    col_analysis_col1, col_analysis_col2 = st.columns(2)
+                    col1, col2 = st.columns(2)
 
-                    col_analysis_col2.plotly_chart(
+                    col1.plotly_chart(
                         px.pie(col_data.value_counts().to_frame(
                             name='count').reset_index(),
                                values='count',
                                names='index'))
 
-                    col_analysis_col1.plotly_chart(px.histogram(
-                        col_data, marginal='box'),
-                                                   use_container_width=True)
+                    col2.plotly_chart(px.histogram(col_data, marginal='box'),
+                                      use_container_width=True)
             else:
                 col_stats = np.round(col_data.describe(), 2).to_dict()
 
@@ -129,16 +136,14 @@ class StatsTools(Tools):
 
                 合计：{np.round(col_data.sum(),2)}  均值：{col_stats['mean']}  标准差：{col_stats['std']}  异变系数：{varity}  峰度：{kurtosis} 偏度：{skew} 最小值：{col_stats['min']} 25%：{col_stats['25%']}  50%：{col_stats['50%']}  75%：{col_stats['75%']}  最大值：{col_stats['max']} """
                          )
-                col_analysis_col1, col_analysis_col2 = st.columns(2)
-                col_analysis_col1.plotly_chart(px.box(col_data),
-                                               use_container_width=True)
-                col_analysis_col2.plotly_chart(px.histogram(col_data,
-                                                            text_auto=True),
-                                               use_container_width=True)
+                col1, col2 = st.columns(2)
+                col1.plotly_chart(px.box(col_data), use_container_width=True)
+                col2.plotly_chart(px.histogram(col_data, text_auto=True),
+                                  use_container_width=True)
 
     def multi_dim_analysis(self, data):
         with st.expander('多维分析', True):
-            col1, col2 = st.columns([0.3, 0.7])
+            col1, col2 = st.columns([0.2, 0.8])
             chart_type_dict = {
                 'scatter': '散点图',
                 'line': '折线图',
@@ -186,3 +191,19 @@ class StatsTools(Tools):
                     fig = None
 
             col2.plotly_chart(fig, use_container_width=True)
+
+    def distribution_test(self, data):
+        with st.expander('分布检验', True):
+            st.write('conding')
+
+    def variance_test(self, data):
+        with st.expander('方差检验', True):
+            st.write('conding')
+
+    def parameter_test(self, data):
+        with st.expander('参数检验', True):
+            st.write('conding')
+
+    def non_parameter_test(self, data):
+        with st.expander('非参检验', True):
+            st.write('conding')
