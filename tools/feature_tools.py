@@ -64,8 +64,7 @@ class FeatureTools(Tools):
                 func(col, val)
 
     def fill_na(self, data):
-        tool = st.expander('空值填充', True)
-        with tool:
+        with st.expander('空值填充', True):
             numeric_cols = data.select_dtypes(exclude=['object']).columns
             object_cols = data.select_dtypes(include=['object']).columns
 
@@ -172,7 +171,8 @@ class FeatureTools(Tools):
             self.__multi_select_with_value(
                 '聚类分箱',
                 numeric_cols,
-                lambda col, bin_num: ff.binning(data, col, bin_num, 'cluster'),
+                lambda col, bin_num: ff.binning(data, col, int(bin_num),
+                                                'cluster'),
                 help_str='维度-分箱数，逗号分隔')
 
     def dim_reduction(self, data):

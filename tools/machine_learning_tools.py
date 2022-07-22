@@ -48,7 +48,10 @@ class MachineLearingTools(Tools):
                 st.stop()
             col2.write('聚类评估')
             if cluster_func == 'kmeans':
-                n_cluster = col1.slider('簇数', min_value=2, max_value=30)
+                n_cluster = col1.number_input('簇数',
+                                              value=2,
+                                              min_value=2,
+                                              max_value=30)
                 kmeans = KMeans(n_clusters=n_cluster, random_state=0)
                 if n_cluster > len(data):
                     st.error('簇数不能大于样本数！')

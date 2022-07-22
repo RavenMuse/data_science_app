@@ -29,8 +29,8 @@ class StatisticsTools(Tools):
         self.add_tool_func('single_dim_analysis', self.single_dim_analysis)
         ex.checkbox("多维分析", key='multi_dim_analysis')
         self.add_tool_func('multi_dim_analysis', self.multi_dim_analysis)
-        
-        ex.markdown("##### 检验分析")
+
+        ex.markdown("##### 假设检验")
         ex.checkbox("分布检验", key='distribution_test')
         self.add_tool_func('distribution_test', self.distribution_test)
         ex.checkbox("方差检验", key='variance_test')
@@ -39,18 +39,13 @@ class StatisticsTools(Tools):
         self.add_tool_func('parameter_test', self.parameter_test)
         ex.checkbox("非参检验", key='non_parameter_test')
         self.add_tool_func('non_parameter_test', self.non_parameter_test)
+
         ex.markdown("##### 高级分析")
-        # ex.checkbox("topsis分析", key='cols_analysis')
-        # self.add_tool_func('cols_analysis', self.cols_analysis)
-        # ex.checkbox("主成分分析", key='cols_analysis')
-        # self.add_tool_func('cols_analysis', self.cols_analysis)
-        # ex.checkbox("因子分析", key='cols_analysis')
-        # self.add_tool_func('cols_analysis', self.cols_analysis)
-        # ex.markdown("##### 预测分析")
-        # ex.checkbox("分类预测", key='cols_analysis')
-        # self.add_tool_func('cols_analysis', self.cols_analysis)
-        # ex.checkbox("数值预测", key='cols_analysis')
-        # self.add_tool_func('cols_analysis', self.cols_analysis)
+        ex.checkbox("综合评估", key='comprehensive_evaluation')
+        self.add_tool_func('comprehensive_evaluation',
+                           self.comprehensive_evaluation)
+        ex.checkbox("因子分析", key='factor_analysis')
+        self.add_tool_func('factor_analysis', self.factor_analysis)
 
     def data_info(self, data):
         with st.expander('数据概览', True):
@@ -206,4 +201,12 @@ class StatisticsTools(Tools):
 
     def non_parameter_test(self, data):
         with st.expander('非参检验', True):
+            st.write('conding')
+
+    def factor_analysis(self, data):
+        with st.expander('因子分析', True):
+            st.write('conding')
+
+    def comprehensive_evaluation(self, data):
+        with st.expander('综合评估', True):
             st.write('conding')

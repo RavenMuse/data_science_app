@@ -3,7 +3,11 @@ import bcrypt
 import streamlit as st
 from datetime import datetime, timedelta
 import extra_streamlit_components as stx
+import time
+import requests
 
+from streamlit_lottie import st_lottie
+from streamlit_lottie import st_lottie_spinner
 # from .hasher import Hasher
 # from .utils import generate_random_pw
 
@@ -193,19 +197,34 @@ class Authenticate:
         str
             Username of the authenticated user.
         """
+
+        @st.cache()
+        def load_lottieurl(url: str):
+            r = requests.get(url)
+            if r.status_code != 200:
+                return None
+            return r.json()
+
+        lottie_url_hello = "https://assets10.lottiefiles.com/packages/lf20_xeaylool.json"
+        lottie_hello = load_lottieurl(lottie_url_hello)
         if not st.session_state['authentication_status']:
             self._check_cookie()
             if st.session_state['authentication_status'] != True:
-                login_form = st.form('Login')
+                col1, col2 = st.columns([0.6, 0.4])
+                with col1:
+                    st_lottie(lottie_hello, key="hello", height=300)
+                # with st_lottie_spinner(lottie_hello, key="hello", height=500):
+                #     time.sleep(3)
+                login_form = col2.form('Login')
 
                 login_form.write('##### 用户名密码登录')
+
                 self.username = login_form.text_input('用户名').lower()
                 st.session_state['username'] = self.username
                 self.password = login_form.text_input('密码', type='password')
 
                 if login_form.form_submit_button('登录'):
                     self._check_credentials()
-
         return st.session_state['name'], st.session_state[
             'authentication_status'], st.session_state['username']
 

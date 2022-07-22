@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import plotly
 import operator
-
+from sklearn.cluster import KMeans
 from datetime import *
 from plotly.graph_objs import *
 from scipy import sparse
@@ -111,12 +111,19 @@ class FeatureFunction:
 
         if strategy == 'width':
             bins = pd.cut(data_frame[col], bins=bin_num)
+            data_frame.loc[:, col + '_binno'] = pd.factorize(bins,
+                                                             sort=True)[0]
+            data_frame.loc[:, col + '_bin'] = bins.astype(str)
         if strategy == 'quantile':
             bins = pd.qcut(data_frame[col], bin_num)
+            data_frame.loc[:, col + '_binno'] = pd.factorize(bins,
+                                                             sort=True)[0]
+            data_frame.loc[:, col + '_bin'] = bins.astype(str)
         if strategy == 'cluster':
-            bins = pd.qcut(data_frame[col], bin_num)
-        data_frame.loc[:, col + '_binno'] = pd.factorize(bins, sort=True)[0]
-        data_frame.loc[:, col + '_bin'] = bins.astype(str)
+            kmeans = KMeans(n_clusters=bin_num, random_state=0)
+
+            cluster = kmeans.fit_predict(data_frame[[col]].values)
+            data_frame.loc[:, col + '_binno'] = cluster
 
     @staticmethod
     def fill_na(data_frame, cols, strategy='mean'):
