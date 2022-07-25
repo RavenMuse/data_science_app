@@ -2,6 +2,7 @@ import os
 import warnings
 import sqlparse
 import pandas as pd
+import numpy as np
 import streamlit as st
 import streamlit_authenticator as stauth
 
@@ -108,10 +109,13 @@ class DataToolsApp:
 
                 options = list(st.session_state.data.keys())
                 sample_name = col2.selectbox('当前样本', options)
-                data = st.session_state.data[sample_name]
+                data = st.session_state.data[sample_name].copy()
             except:
                 st.error('无效的查询！')
                 st.stop()
+            col2.write(
+                f'`内存占用：{np.round(data.memory_usage(index=True, deep=True).sum()/1028,2)} Kb`'
+            )
             return data, file_name
 
     def __save_data(self, data, file_name):
@@ -125,9 +129,12 @@ class DataToolsApp:
             def convert_df(data):
                 return data.to_csv(index=False, encoding='utf_8_sig')
 
-            file_name_new = st.text_input('请输入文件名：',
-                                          file_name.split('.')[0] + '_new.csv')
-            st.download_button(
+            col1, col2 = st.columns([0.8, 0.2])
+            file_name_new = col1.text_input(
+                '请输入保存文件名：',
+                file_name.split('.')[0] + '_new.csv')
+            col2.write('&nbsp;')
+            col2.download_button(
                 label="下载结果数据",
                 data=convert_df(data),
                 file_name=file_name_new,
@@ -155,7 +162,7 @@ class DataToolsApp:
         [data-testid=stSidebar] [data-baseweb=checkbox] :last-child {
             font-size: 0.9rem
         }
-        [data-testid=stSidebar] .css-1siy2j7 {
+        [data-testid=stSidebar] .css-17ziqus {
             width: 18rem
         }
         [data-testid=stExpander] .streamlit-expanderHeader {
@@ -163,7 +170,7 @@ class DataToolsApp:
             font-weight: 500;
         }
         [data-testid=stSidebar] .css-hxt7ib {
-            padding-top: 4rem
+            padding-top: 3rem
         }
         footer {visibility: hidden;}
         </style>

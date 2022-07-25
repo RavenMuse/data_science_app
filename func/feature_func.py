@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import plotly
 import operator
+
+from collections import Counter
 from sklearn.cluster import KMeans
 from datetime import *
 from plotly.graph_objs import *
@@ -126,22 +128,33 @@ class FeatureFunction:
             data_frame.loc[:, col + '_binno'] = cluster
 
     @staticmethod
-    def fill_na(data_frame, cols, strategy='mean'):
+    def fill_na(data_frame, cols, strategy='mean', fill_value=None):
         """
         空值填充
         :param data_frame:
         :param cols:
         :param type:填充方式
         """
-        for col in cols:
+        if strategy == 'custom':
+            if data_frame.dtypes[cols] == np.object0:
+                fill_value = str(fill_value)
+            elif data_frame.dtypes[cols] == np.int:
+                fill_value = int(fill_value)
+            else:
+                fill_value = float(fill_value)
+            data_frame[cols].fillna(fill_value, inplace=True)
+        else:
+            for col in cols:
 
-            if strategy == 'mean':
-                data_frame[col].fillna(data_frame[col].mean(), inplace=True)
-            if strategy == 'median':
-                data_frame[col].fillna(data_frame[col].median(), inplace=True)
-            if strategy == 'most_frequent':
-                data_frame[col].fillna(data_frame[col].value_counts().index[0],
-                                       inplace=True)
+                if strategy == 'mean':
+                    data_frame[col].fillna(data_frame[col].mean(),
+                                           inplace=True)
+                if strategy == 'median':
+                    data_frame[col].fillna(data_frame[col].median(),
+                                           inplace=True)
+                if strategy == 'most_frequent':
+                    data_frame[col].fillna(
+                        data_frame[col].value_counts().index[0], inplace=True)
 
     @staticmethod
     def dummies(data_frame, cols):
@@ -188,13 +201,93 @@ class FeatureFunction:
         :param cols:
         """
         for col in cols:
-            val = data_frame[col].astype(float)
+            val = data_frame[col].astype(float).dropna()
             q1 = np.quantile(val, q=0.25)
             q3 = np.quantile(val, q=0.75)
             up = q3 + 1.5 * (q3 - q1)
             low = q1 - 1.5 * (q3 - q1)
             data_frame.loc[(data_frame[col] > up) | (data_frame[col] < low),
                            col] = None
+
+    @staticmethod
+    def entropy(value: list):
+        """离散数列熵
+
+        Args:
+            value (list): 离散数列
+
+        Returns:
+            float: 熵值
+        """
+
+        prob_dict = Counter(value)  #Counter 对相关list 进行计算。
+        s = sum(prob_dict.values())
+        probs = np.array([i / s for i in prob_dict.values()])  #计算每个重复函数所占的比率
+        # result = 0
+        # for x in probs:
+        # result += (-x)*np.log(x)
+        # return result
+        return -probs.dot(np.log(probs))  # 获取该分类的信息熵
+
+    @staticmethod
+    def gain_entropy(data_frame, col1, col2):
+        """互信息熵（信息增益）
+           I(A,B) = H(A)+H(B)-H(A,B)
+        Args:
+            value (list): 离散数列
+
+        Returns:
+            float: 熵值
+        """
+        col1_entropy = FeatureFunction.entropy(data_frame[col1])
+        col2_entropy = FeatureFunction.entropy(data_frame[col2])
+        col1_col2_entropy = FeatureFunction.entropy(
+            zip(data_frame[col1], data_frame[col2]))
+        return col1_entropy + col2_entropy - col1_col2_entropy
+
+    @staticmethod
+    def conditional_entropy(data_frame, col1, col2):
+        """互信息熵
+           H(A|B) = H(A,B)-H(B)
+        Args:
+            value (list): 离散数列
+
+        Returns:
+            float: 熵值
+        """
+        col1_entropy = FeatureFunction.entropy(data_frame[col1])
+        col1_col2_entropy = FeatureFunction.entropy(
+            zip(data_frame[col1], data_frame[col2]))
+        return col1_col2_entropy - col2_entropy
+
+    @staticmethod
+    def correlation_analysis(data_frame):
+        """相关性分析
+        Args:
+            data_frame : 离散数列
+
+        Returns:
+            float: 熵值
+        """
+        object_cols = data_frame.select_dtypes(include='object').columns
+        numeric_cols = data_frame.select_dtypes(exclude='object').columns
+
+        # 连续性变量相关性
+        corr_df = data_frame[numeric_cols].corr().fillna(0)
+        corr_index = list(corr_df.index.values)
+        corr_index.reverse()
+        numeric_corr = corr_df.loc[corr_index, :]
+
+        # 离散变量相关性
+        object_corr = pd.DataFrame()
+        for x_col in object_cols:
+            for y_col in object_cols:
+                object_corr.loc[x_col, y_col] = FeatureFunction.gain_entropy(
+                    data_frame, x_col, y_col)
+        corr_index = list(object_cols.values)
+        corr_index.reverse()
+        object_corr = object_corr.loc[corr_index, :]
+        return numeric_corr, object_corr
 
     @staticmethod
     def similarity(a, b, n=4):

@@ -205,6 +205,7 @@ class Authenticate:
                 return None
             return r.json()
 
+        # https://lottiefiles.com/
         lottie_url_hello = "https://assets10.lottiefiles.com/packages/lf20_xeaylool.json"
         lottie_hello = load_lottieurl(lottie_url_hello)
         if not st.session_state['authentication_status']:

@@ -48,20 +48,15 @@ class FeatureTools(Tools):
         values = col2.text_input('',
                                  key=label + '_text',
                                  placeholder='2,3,4',
-                                 help=help_str).split(',')
-        if len(cols) == 0:
+                                 help=help_str)
+        if len(cols) == 0 or not values:
             return
         else:
+            values = values.split(',')
             for i, col in enumerate(cols):
                 if i > len(values) - 1:
                     continue
-                val = values[i]
-                try:
-                    val = float(values[i])
-                except:
-                    st.error('参数必须为数值！')
-                    return
-                func(col, val)
+                func(col, values[i])
 
     def fill_na(self, data):
         with st.expander('空值填充', True):
@@ -78,12 +73,12 @@ class FeatureTools(Tools):
                 cols = col3.multiselect('高频值填充', object_cols)
                 ff.fill_na(data, cols, strategy='most_frequent')
 
-            fill_str = st.text_input('自定义填充', help="输入json字符串，例如:{'id':0}")
-            if fill_str:
-                try:
-                    data.fillna(value=eval(fill_str), inplace=True)
-                except:
-                    st.error('json格式错误')
+            self.__multi_select_with_value(
+                '自定义填充',
+                data.columns,
+                lambda col, value: ff.fill_na(
+                    data, col, strategy='custom', fill_value=value),
+                help_str='填充值，逗号分隔')
 
     def standardize(self, data):
         numeric_cols = data.select_dtypes(exclude=['object']).columns
@@ -111,7 +106,7 @@ class FeatureTools(Tools):
                 '维度-平移系数',
                 numeric_cols,
                 lambda col, coff: ff.number_transform(
-                    data, col, coff, strategy='move'),
+                    data, col, float(coff), strategy='move'),
                 help_str='平移系数，逗号分隔')
 
             numeric_cols = data.select_dtypes(exclude=['object']).columns
@@ -121,7 +116,7 @@ class FeatureTools(Tools):
                 '维度-缩放系数',
                 numeric_cols,
                 lambda col, coff: ff.number_transform(
-                    data, col, coff, strategy='scale'),
+                    data, col, float(coff), strategy='scale'),
                 help_str='平移系数，逗号分隔')
 
             numeric_cols = data.select_dtypes(exclude=['object']).columns
@@ -134,7 +129,7 @@ class FeatureTools(Tools):
                 '维度-变换系数',
                 numeric_cols,
                 lambda col, coff: ff.number_transform(
-                    data, col, coff, strategy='boxcox'),
+                    data, col, float(coff), strategy='boxcox'),
                 help_str=
                 "变换系数，逗号分隔；对数变换：lambda=0，倒数变换：lambda=-1，平方根变换：lambda=0.5")
 
