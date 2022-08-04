@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import streamlit_authenticator as stauth
-
+# from streamlit_elements import elements, mui, html, dashboard
 from pandasql import sqldf
 from streamlit_ace import st_ace
 from datetime import datetime, timedelta
@@ -56,90 +56,106 @@ class DataToolsApp:
 
     def __get_data(self):
 
-        with st.expander("数据源", True):
+        # with st.expander("数据源", True):
+        ## 数据源
+        paths = st.file_uploader('选择数据文件',
+                                 accept_multiple_files=True,
+                                 type='csv')
 
-            paths = st.file_uploader('选择数据文件',
-                                     accept_multiple_files=True,
-                                     type='csv')
-            col1, col2 = st.columns([0.85, 0.15])
+        # @st.cache(allow_output_mutation=True)
+        def __load_data(path=None):
+            return pd.read_csv(path)
 
-            @st.cache(allow_output_mutation=True)
-            def __load_data(path=None):
-                return pd.read_csv(path)
+        if not paths:
+            table_name = 'iris'
+            locals()[table_name] = __load_data(
+                '/data/data_science_app/iris.csv')
+            file_name = 'iris.csv'
+        else:
+            for path in paths:
+                table_name = path.name.split('.')[0]
+                locals()[table_name] = __load_data(path)
+            file_name = paths[0].name
 
-            if not paths:
-                table_name = 'test_sample'
-                locals()[table_name] = __load_data(
-                    '/data/data_science_app/test_sample.csv')
-                file_name = 'test_sample.csv'
-            else:
-                for path in paths:
-                    table_name = path.name.split('.')[0]
-                    locals()[table_name] = __load_data(path)
-                file_name = paths[0].name
+        ## SQL操作
+        col1, col2 = st.columns([0.85, 0.15])
+        cols = ',\n'.join(locals()[table_name].columns)
+        default_sql = sqlparse.format(
+            f"SELECT {cols} FROM {table_name} LIMIT 20",
+            reindent=True,
+            keyword_case='upper')
+        with col1:
+            st.write("###### SQL")
+            sql = st_ace(value=default_sql,
+                         language='sql',
+                         theme='terminal',
+                         show_gutter=False,
+                         height=180)
 
-            # def __sql_format():
-            #     st.session_state.sql_input = sqlparse.format(
-            #         st.session_state.sql_input,
-            #         reindent=True,
-            #         keyword_case='upper')
+        try:
+            data = sqldf(sql, locals())
+        except:
+            st.error('无效的查询！')
+            st.stop()
 
-            cols = ',\n'.join(locals()[table_name].columns)
-            with col1:
-                st.write("###### SQL")
-                sql = st_ace(
-                    value=f"SELECT {cols}\nFROM {table_name}\nLIMIT 20",
-                    language='sql',
-                    theme='terminal',
-                    show_gutter=False,
-                    height=200)
+        ## 样本操作
+        if 'data' not in st.session_state:
+            st.session_state.data = {'default_sample': data}
+            st.session_state.data_count = 1
+        col2.write('&nbsp;')
+        sample_name = col2.text_input('新样本名称', 'va')
 
-            col2.write("""&nbsp;""")
-            try:
-                data = sqldf(sql, locals())
-                if 'data' not in st.session_state:
-                    st.session_state.data = {'样本1': data}
-                    st.session_state.data_count = 1
+        if col2.button('创建样本'):
+            if sample_name not in st.session_state.data:
+                st.session_state.data_count += 1
+            st.session_state.data[sample_name] = data
 
-                add_btn = col2.button('创建新样本')
-                if add_btn:
-                    st.session_state.data_count += 1
-                    st.session_state.data[
-                        f'样本{st.session_state.data_count}'] = data
+        col1, col2 = st.columns([0.85, 0.15])
+        col2.write('&nbsp;')
 
-                options = list(st.session_state.data.keys())
-                sample_name = col2.selectbox('当前样本', options)
-                data = st.session_state.data[sample_name].copy()
-            except:
-                st.error('无效的查询！')
-                st.stop()
-            col2.write(
-                f'`内存占用：{np.round(data.memory_usage(index=True, deep=True).sum()/1028,2)} Kb`'
-            )
-            return data, file_name
+        # options = st.session_state.data.keys()
+
+        def on_remove():
+            if st.session_state.data_count != 1:
+                st.session_state.data_count -= 1
+                del st.session_state.data[sample_name]
+                st.session_state.current_sample = list(
+                    st.session_state.data.keys())[-1]
+
+        remove_btn = col2.button('删除样本', on_click=on_remove)
+        options = st.session_state.data.keys()
+        sample_name = col1.selectbox('当前样本',
+                                     options,
+                                     key='current_sample',
+                                     index=len(options) - 1)
+
+        data = st.session_state.data[sample_name]
+        # col2.write(
+        #     f'`内存占用：{np.round(data.memory_usage(index=True, deep=True).sum()/1028,2)} Kb`'
+        # )
+        return data, file_name
 
     def __save_data(self, data, file_name):
 
-        with st.expander("保存数据", False):
-            # 显示结果数据
-            st.write(data)
+        # with st.expander("保存数据", False):
+        # 显示结果数据
+        st.write(data)
 
-            # 数据下载保存
-            @st.cache
-            def convert_df(data):
-                return data.to_csv(index=False, encoding='utf_8_sig')
+        # 数据下载保存
+        @st.cache
+        def convert_df(data):
+            return data.to_csv(index=False, encoding='utf_8_sig')
 
-            col1, col2 = st.columns([0.8, 0.2])
-            file_name_new = col1.text_input(
-                '请输入保存文件名：',
-                file_name.split('.')[0] + '_new.csv')
-            col2.write('&nbsp;')
-            col2.download_button(
-                label="下载结果数据",
-                data=convert_df(data),
-                file_name=file_name_new,
-                mime='text/csv',
-            )
+        col1, col2 = st.columns([0.8, 0.2])
+        file_name_new = col1.text_input('请输入保存文件名：',
+                                        file_name.split('.')[0] + '_new.csv')
+        col2.write('&nbsp;')
+        col2.download_button(
+            label="下载结果数据",
+            data=convert_df(data),
+            file_name=file_name_new,
+            mime='text/csv',
+        )
 
     def __load_style(self):
         # st.markdown(
@@ -196,27 +212,32 @@ class DataToolsApp:
         for tools in self.__tools_set:
             tools.layout_menu()
 
-        ## menu info
-        # side_bar_info = st.sidebar.container()
-        # with side_bar_info:
-        #     st.markdown("""---""")
+            ## menu info
+            # side_bar_info = st.sidebar.container()
+            # with side_bar_info:
+            #     st.markdown("""---""")
 
-        # main
-        ## app_info
-        main_info = st.container()
-        with main_info:
-            st.markdown("""
-            ### 数据科学实验台
-            - 一个简单实用的数据科学工具集，左侧菜单是数据工具列表，在此之前您需要选择一个数据集，才能开启数据探索之旅！
-            """)
+            # main
+            ## app_info
+        st.markdown("""
+        ## 数据科学实验台
+        - 一个简单实用的数据科学工具集，左侧菜单是数据工具列表，在此之前您需要选择一个数据集，才能开启数据探索之旅！
+        """)
 
+        st.write('### 数据原料')
         ## app_tools
         data, file_name = self.__get_data()
-        if data is not None:
-            for tools in self.__tools_set:
-                tools.use_tool(data)
-        self.__save_data(data, file_name)
 
+        st.write('### 数据实验')
+        if data is not None:
+            tabs_name = [tools.tools_name for tools in self.__tools_set]
+            tabs_name.append('数据保存')
+            tabs = st.tabs(tabs_name)
+            for i, tools in enumerate(self.__tools_set):
+                with tabs[i]:
+                    tools.use_tool(data)
+            with tabs[-1]:
+                self.__save_data(data, file_name)
         self.__authenticator.logout('退出登录', 'sidebar')
 
 

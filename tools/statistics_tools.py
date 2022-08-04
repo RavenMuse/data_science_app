@@ -16,13 +16,13 @@ class StatisticsTools(Tools):
 
     def __init__(self):
         super().__init__()
-        self.tools_name = '统计工具'
+        self.tools_name = '数理统计'
 
     def use_tool(self, data):
         return super().use_tool(data)
 
     def layout_menu(self):
-        ex = st.sidebar.expander('统计工具', True)
+        ex = st.sidebar.expander(self.tools_name, True)
         ex.markdown("##### 基础分析")
         ex.checkbox("数据概览", key='data_info')
         self.add_tool_func('data_info', self.data_info)

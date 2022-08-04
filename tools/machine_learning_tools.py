@@ -16,22 +16,43 @@ class MachineLearingTools(Tools):
 
     def __init__(self):
         super().__init__()
-        self.tools_name = '机器学习工具'
+        self.tools_name = '机器学习'
 
     def use_tool(self, data):
         return super().use_tool(data)
 
     def layout_menu(self):
-        ex = st.sidebar.expander('机器学习工具', True)
+        ex = st.sidebar.expander(self.tools_name, True)
+        ex.markdown("##### 采样")
+        ex.checkbox("过采样", key='over_sampling')
+        self.add_tool_func('over_sampling', self.over_sampling)
+        ex.checkbox("欠采样", key='under_sampling')
+        self.add_tool_func('under_sampling', self.under_sampling)
+
         ex.markdown("##### 聚类")
         ex.checkbox("聚类分析", key='cluster_analysis')
         self.add_tool_func('cluster_analysis', self.cluster_analysis)
 
-        # ex.markdown("##### 预测分析")
-        # ex.checkbox("分类预测", key='cols_analysis')
-        # self.add_tool_func('cols_analysis', self.cols_analysis)
-        # ex.checkbox("数值预测", key='cols_analysis')
-        # self.add_tool_func('cols_analysis', self.cols_analysis)
+        ex.markdown("##### 分类")
+        ex.checkbox("线性分类", key='linear_classifier')
+        self.add_tool_func('linear_classifier', self.linear_classifier)
+        ex.checkbox("树分类", key='tree_classifier')
+        self.add_tool_func('tree_classifier', self.tree_classifier)
+
+        ex.markdown("##### 回归")
+        ex.checkbox("线性回归", key='linear_regression')
+        self.add_tool_func('linear_regression', self.linear_regression)
+        ex.checkbox("树回归", key='tree_regression')
+        self.add_tool_func('tree_regression', self.tree_regression)
+
+    def over_sampling(self, data):
+        with st.expander('过采样', True):
+            st.write('coding')
+
+    def under_sampling(self, data):
+        with st.expander('欠采样', True):
+            st.write('coding')
+
     def cluster_analysis(self, data):
         with st.expander('聚类分析', True):
             col1, col2 = st.columns([0.2, 0.8])
@@ -99,9 +120,19 @@ class MachineLearingTools(Tools):
                                  title=title)
 
             col2.plotly_chart(fig, use_container_width=True)
-            # fig = px.scatter(data,
-            #                  x=x,
-            #                  y=y,
-            #                  size=size,
-            #                  color=color,
-            #                  hover_name=text)
+
+    def linear_classifier(self, data):
+        with st.expander('线性分类', True):
+            st.write('coding')
+
+    def tree_classifier(self, data):
+        with st.expander('树分类', True):
+            st.write('coding')
+
+    def linear_regression(self, data):
+        with st.expander('线性回归', True):
+            st.write('coding')
+
+    def tree_regression(self, data):
+        with st.expander('树回归', True):
+            st.write('coding')

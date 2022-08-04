@@ -15,16 +15,15 @@ class FeatureTools(Tools):
 
     def __init__(self):
         super().__init__()
-        self.tools_name = '特征工具'
+        self.tools_name = '数据处理'
 
     def use_tool(self, data):
         return super().use_tool(data)
 
     def layout_menu(self):
 
-        ex = st.sidebar.expander('特征工具', True)
-        ex.markdown("##### 数值处理")
-
+        ex = st.sidebar.expander(self.tools_name, True)
+        ex.markdown("##### 预处理")
         ex.checkbox("标准化", key='standardize')
         self.add_tool_func('standardize', self.standardize)
         ex.checkbox("降噪", key='denoising')
@@ -32,7 +31,7 @@ class FeatureTools(Tools):
         ex.checkbox("空值填充", key='fill_na')
         self.add_tool_func('fill_na', self.fill_na)
 
-        ex.markdown("##### 数据变换")
+        ex.markdown("##### 变换")
         ex.checkbox("数值变换", key='number_transform')
         self.add_tool_func('number_transform', self.number_transform)
         ex.checkbox("降维", key='dim_reduction')
