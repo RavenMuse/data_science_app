@@ -16,7 +16,7 @@ class StatisticsTools(Tools):
 
     def __init__(self):
         super().__init__()
-        self.tools_name = '数理统计'
+        self.tools_name = '数据分析'
 
     def use_tool(self, data):
         return super().use_tool(data)
@@ -30,16 +30,16 @@ class StatisticsTools(Tools):
         self.add_tool_func('single_dim_analysis', self.single_dim_analysis)
         ex.checkbox("多维分析", key='multi_dim_analysis')
         self.add_tool_func('multi_dim_analysis', self.multi_dim_analysis)
+        ex.checkbox("相关性分析", key='correlation_analysis')
+        self.add_tool_func('correlation_analysis', self.correlation_analysis)
 
         ex.markdown("##### 假设检验")
-        ex.checkbox("分布检验", key='distribution_test')
-        self.add_tool_func('distribution_test', self.distribution_test)
-        ex.checkbox("方差检验", key='variance_test')
-        self.add_tool_func('variance_test', self.variance_test)
         ex.checkbox("参数检验", key='parameter_test')
         self.add_tool_func('parameter_test', self.parameter_test)
         ex.checkbox("非参检验", key='non_parameter_test')
         self.add_tool_func('non_parameter_test', self.non_parameter_test)
+
+        ex.markdown("##### 时序分析")
 
         ex.markdown("##### 高级分析")
         ex.checkbox("综合评估", key='comprehensive_evaluation')
@@ -85,12 +85,6 @@ class StatisticsTools(Tools):
             # info_table.update_layout(height=150,
             #                          margin=dict(t=0, l=10, r=10, b=0))
             # st.plotly_chart(info_table, use_container_width=True)
-            st.write('相关性分析')
-            col1, col2 = st.columns([0.5, 0.5])
-            numeric_corr, object_corr = ff.correlation_analysis(data)
-            col1.plotly_chart(px.imshow(numeric_corr),
-                              use_container_width=True)
-            col2.plotly_chart(px.imshow(object_corr), use_container_width=True)
 
     def single_dim_analysis(self, data):
         with st.expander('单维分析', True):
@@ -99,10 +93,12 @@ class StatisticsTools(Tools):
             if col_data.dtype.name == 'object':
                 unique_count = len(col_data.unique())
                 entropy = np.round(ff.entropy(col_data), 2)
-                st.write(f"""统计量
+                st.write('统计量')
+                st.write(f"""<font size=2>离散数：`{unique_count}`&emsp;&emsp;
+                    熵：`{entropy}`</font>
+                    """,
+                         unsafe_allow_html=True)
 
-                离散数：{unique_count}  熵：{entropy}
-                """)
                 #todo: 高离散值变量暂不进行图表分析
                 if unique_count < 100:
                     col1, col2 = st.columns(2)
@@ -124,14 +120,70 @@ class StatisticsTools(Tools):
                 kurtosis = np.round(stats.kurtosis(col_data, fisher=False), 2)
                 skew = np.round(stats.skew(col_data), 2)
 
-                st.write(f"""统计量
+                st.write('统计量')
+                st.write(
+                    f"""<font size=2>合计：`{np.round(col_data.sum(),2)}`&emsp;&emsp;
+                    均值：`{col_stats['mean']}`&emsp;&emsp;
+                    标准差：`{col_stats['std']}`&emsp;&emsp;
+                    异变系数：`{varity}`&emsp;&emsp;
+                    峰度：`{kurtosis}`&emsp;&emsp;
+                    偏度：`{skew}`</font>
+                    """,
+                    unsafe_allow_html=True)
 
-                合计：{np.round(col_data.sum(),2)}  均值：{col_stats['mean']}  标准差：{col_stats['std']}  异变系数：{varity}  峰度：{kurtosis} 偏度：{skew} 最小值：{col_stats['min']} 25%：{col_stats['25%']}  50%：{col_stats['50%']}  75%：{col_stats['75%']}  最大值：{col_stats['max']} """
-                         )
+                st.write(f"""<font size=2>最小值：`{col_stats['min']}`&emsp;&emsp;
+                    25%：`{col_stats['25%']}`&emsp;&emsp;
+                    50%：`{col_stats['50%']}`&emsp;&emsp;
+                    75%：`{col_stats['75%']}`&emsp;&emsp;
+                    最大值：`{col_stats['max']}` </font>
+                    """,
+                         unsafe_allow_html=True)
+
                 col1, col2 = st.columns(2)
-                col1.plotly_chart(px.box(col_data), use_container_width=True)
-                col2.plotly_chart(px.histogram(col_data, text_auto=True),
+                # col1.plotly_chart(px.box(col_data), use_container_width=True)
+                col2.plotly_chart(px.histogram(col_data,
+                                               marginal='box',
+                                               text_auto=True),
                                   use_container_width=True)
+
+                col1.plotly_chart(pff.create_distplot(
+                    [col_data], ['distplot'],
+                    bin_size=1
+                    if col_stats['mean'] == 0 else col_stats['mean'] / 20,
+                    colors=['#F66095'],
+                    show_rug=False),
+                                  use_container_width=True)
+
+                def __get_test_text(pvalue):
+                    if pvalue < 0.05:
+                        return f'<font color=Red>非正态</font>，P=`{pvalue}` 小于置信系数0.05'
+                    else:
+                        return f'<font color=Lime>正态</font>，P=`{pvalue}` 大于置信系数0.05'
+
+                st.write(
+                    f" **Shapiro-Wilk** 检验：{__get_test_text(stats.shapiro(col_data).pvalue)}",
+                    unsafe_allow_html=True)
+                st.write(
+                    f" **Normaltest** 检验：{__get_test_text(stats.normaltest(col_data).pvalue)}，结合峰度检验和偏度检验得出",
+                    unsafe_allow_html=True)
+                target_dist = stats.norm(loc=col_stats['mean'],
+                                         scale=col_data.std(ddof=1))
+                st.write(
+                    f"**Kolmogorov-Smirnov** 检验：{__get_test_text(stats.kstest(col_data, target_dist.cdf).pvalue)}，使用样本无偏量估计参数构建正态分布",
+                    unsafe_allow_html=True)
+                # mean_p = col_stats['mean'] - col_stats['min']
+                # shape = (mean_p**2) / (col_stats['std']**2)
+                # scale = (col_stats['std']**2) / mean_p
+                # st.write(
+                #     stats.kstest(col_data,
+                #                  stats.gamma(shape,
+                #                              loc=col_stats['min'],
+                #                              scale=scale).cdf,
+                #                  N=len(col_data)))
+                # st.write(stats.anderson(col_data, "norm").statistic)
+                # st.write(stats.anderson(col_data, "norm").critical_values)
+                # st.write("- **Anderson-Darling** 检验：非正态（p=0.001>0.05）",
+                #          unsafe_allow_html=True)
 
     def multi_dim_analysis(self, data):
         with st.expander('多维分析', True):
@@ -163,7 +215,9 @@ class StatisticsTools(Tools):
                                  y=y,
                                  size=size,
                                  color=color,
-                                 hover_name=text)
+                                 hover_name=text,
+                                 marginal_x="box",
+                                 marginal_y="violin")
             if chart_type == 'bar':
                 x_col = col1.selectbox("X", data.columns)
                 y_col = col1.selectbox("Y", data.columns, index=1)
@@ -184,17 +238,82 @@ class StatisticsTools(Tools):
 
             col2.plotly_chart(fig, use_container_width=True)
 
-    def distribution_test(self, data):
-        with st.expander('分布检验', True):
-            st.write('conding')
+    def correlation_analysis(self, _):
+        with st.expander('相关性分析', True):
+            options = st.session_state.data.keys()
+            sample_names = st.multiselect(
+                '选择一个或两个样本',
+                options,
+                key='correlation_analysis_multiselect',
+                default=list(options)[0])
+            if len(sample_names) == 0:
+                return
+            sample1 = st.session_state.data[sample_names[0]]
+            if len(sample_names) > 1:
+                sample2 = st.session_state.data[sample_names[1]]
 
-    def variance_test(self, data):
-        with st.expander('方差检验', True):
-            st.write('conding')
+                if len(sample1) != len(sample2):
+                    st.warning('样本大小需要相同！')
+                    return
+                numeric_corr, object_corr = ff.correlation_analysis(
+                    sample1, sample2)
+            else:
+                numeric_corr, object_corr = ff.correlation_analysis(sample1)
+            col1, col2 = st.columns([0.5, 0.5])
+            col1.plotly_chart(px.imshow(numeric_corr),
+                              use_container_width=True)
+            col2.plotly_chart(px.imshow(object_corr), use_container_width=True)
 
-    def parameter_test(self, data):
+    def parameter_test(self, _):
         with st.expander('参数检验', True):
-            st.write('conding')
+            col1, col2 = st.columns([0.2, 0.8])
+            options = st.session_state.data.keys()
+            sample_names = col1.multiselect('选择一个或两个样本',
+                                            options,
+                                            key='parameter_test_multiselect',
+                                            default=list(options)[0])
+            if len(sample_names) == 0:
+                return
+
+            sample1 = sample2 = st.session_state.data[sample_names[0]]
+            if len(sample_names) > 1:
+                sample2 = st.session_state.data[sample_names[1]]
+
+            sample1_numeric_cols = sample1.select_dtypes(
+                exclude=['object']).columns
+            sample2_numeric_cols = sample2.select_dtypes(
+                exclude=['object']).columns
+            first_dim = col1.selectbox('第一个维度', sample1_numeric_cols)
+            second_dim = col1.selectbox('第二个维度', sample2_numeric_cols)
+
+            col_data1 = sample1[first_dim]
+            col_data2 = sample2[second_dim]
+
+            if len(col_data1) != len(col_data2):
+                col1.warning('样本大小不同，无法检验！')
+                return
+
+            def __get_test_text(pvalue):
+                if pvalue < 0.05:
+                    return f'<font color=Red>有显著性差异</font>，P=`{pvalue}` 小于置信系数0.05'
+                else:
+                    return f'<font color=Lime>无显著性差异</font>，P=`{pvalue}` 大于置信系数0.05'
+
+            col2.write('方差检验')
+            levene_p = stats.levene(col_data1, col_data2).pvalue
+            col2.write(f"- Levene检验： {__get_test_text(levene_p)}",
+                       unsafe_allow_html=True)
+            col2.write(
+                f"- Bartlett检验： {__get_test_text(stats.bartlett(col_data1, col_data2).pvalue)}",
+                unsafe_allow_html=True)
+            col2.write('&nbsp;')
+            col2.write('均值检验')
+            col2.write(
+                f"- T检验（独立样本）： {__get_test_text(stats.ttest_ind(col_data1, col_data2,equal_var=levene_p>0.05).pvalue)}",
+                unsafe_allow_html=True)
+            col2.write(
+                f"- T检验（配对样本）： {__get_test_text(stats.ttest_rel(col_data1, col_data2).pvalue)}",
+                unsafe_allow_html=True)
 
     def non_parameter_test(self, data):
         with st.expander('非参检验', True):

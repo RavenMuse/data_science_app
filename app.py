@@ -58,7 +58,7 @@ class DataToolsApp:
 
         # with st.expander("数据源", True):
         ## 数据源
-        paths = st.file_uploader('选择数据文件',
+        paths = st.file_uploader('数据源文件',
                                  accept_multiple_files=True,
                                  type='csv')
 
@@ -78,14 +78,14 @@ class DataToolsApp:
             file_name = paths[0].name
 
         ## SQL操作
-        col1, col2 = st.columns([0.85, 0.15])
+        col1, col2, col3 = st.columns([0.7, 0.2, 0.1])
         cols = ',\n'.join(locals()[table_name].columns)
         default_sql = sqlparse.format(
             f"SELECT {cols} FROM {table_name} LIMIT 20",
             reindent=True,
             keyword_case='upper')
         with col1:
-            st.write("###### SQL")
+            st.write("###### SQL查询")
             sql = st_ace(value=default_sql,
                          language='sql',
                          theme='terminal',
@@ -102,37 +102,43 @@ class DataToolsApp:
         if 'data' not in st.session_state:
             st.session_state.data = {'default_sample': data}
             st.session_state.data_count = 1
-        col2.write('&nbsp;')
-        sample_name = col2.text_input('新样本名称', 'va')
+            st.session_data.last_sample = True
 
-        if col2.button('创建样本'):
-            if sample_name not in st.session_state.data:
-                st.session_state.data_count += 1
-            st.session_state.data[sample_name] = data
+        col2.write('###### 样本管理')
+        sample_name = col2.text_input('新样本名称', f'{table_name}_new')
+        col3.write('&nbsp;')
+        if col3.button('创建样本'):
+            if len(data) == 0:
+                st.warning('无法创建空样本！')
+            else:
+                if sample_name not in st.session_state.data:
+                    st.session_state.data_count += 1
+                st.session_state.data[sample_name] = data
+                st.session_data.last_sample = False
 
-        col1, col2 = st.columns([0.85, 0.15])
-        col2.write('&nbsp;')
-
-        # options = st.session_state.data.keys()
-
-        def on_remove():
+        def __on_remove():
             if st.session_state.data_count != 1:
                 st.session_state.data_count -= 1
                 del st.session_state.data[sample_name]
                 st.session_state.current_sample = list(
                     st.session_state.data.keys())[-1]
+            else:
+                st.session_data.last_sample = True
 
-        remove_btn = col2.button('删除样本', on_click=on_remove)
+        remove_btn = col3.button('删除样本', on_click=__on_remove)
         options = st.session_state.data.keys()
-        sample_name = col1.selectbox('当前样本',
+        sample_name = col2.selectbox('当前样本',
                                      options,
                                      key='current_sample',
                                      index=len(options) - 1)
 
         data = st.session_state.data[sample_name]
-        # col2.write(
-        #     f'`内存占用：{np.round(data.memory_usage(index=True, deep=True).sum()/1028,2)} Kb`'
-        # )
+        col2.write(
+            f'`内存占用：{np.round(data.memory_usage(index=True, deep=True).sum()/1028,2)} KB`'
+        )
+        if remove_btn and st.session_data.last_sample:
+            st.warning('至少需要一个样本！')
+
         return data, file_name
 
     def __save_data(self, data, file_name):
@@ -175,6 +181,9 @@ class DataToolsApp:
         .main .block-container {
             padding: 3rem 5rem 10rem;
         }
+        code {
+            color: #00ff00;
+        }
         [data-testid=stSidebar] [data-baseweb=checkbox] :last-child {
             font-size: 0.9rem
         }
@@ -187,6 +196,18 @@ class DataToolsApp:
         }
         [data-testid=stSidebar] .css-hxt7ib {
             padding-top: 3rem
+        }
+        .main [data-testid=stVerticalBlock] .css-2jbyd0  {
+            gap: 3rem
+        }
+        [data-testid=stVerticalBlock] .css-efci31 {
+            gap: 3rem
+        }
+        [data-testid=stVerticalBlock] .css-1pmdbur {
+            gap: 3rem
+        }
+        [data-testid=stVerticalBlock] .css-l8kweg {
+            gap: 3rem
         }
         footer {visibility: hidden;}
         </style>

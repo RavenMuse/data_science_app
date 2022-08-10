@@ -229,8 +229,24 @@ class FeatureFunction:
         # return result
         return -probs.dot(np.log(probs))  # 获取该分类的信息熵
 
+    # @staticmethod
+    # def gain_entropy(data_frame, col1, col2):
+    #     """互信息熵（信息增益）
+    #        I(A,B) = H(A)+H(B)-H(A,B)
+    #     Args:
+    #         value (list): 离散数列
+
+    #     Returns:
+    #         float: 熵值
+    #     """
+    #     col1_entropy = FeatureFunction.entropy(data_frame[col1])
+    #     col2_entropy = FeatureFunction.entropy(data_frame[col2])
+    #     col1_col2_entropy = FeatureFunction.entropy(
+    #         zip(data_frame[col1], data_frame[col2]))
+    #     return col1_entropy + col2_entropy - col1_col2_entropy
+
     @staticmethod
-    def gain_entropy(data_frame, col1, col2):
+    def gain_entropy(data1, data2):
         """互信息熵（信息增益）
            I(A,B) = H(A)+H(B)-H(A,B)
         Args:
@@ -239,11 +255,10 @@ class FeatureFunction:
         Returns:
             float: 熵值
         """
-        col1_entropy = FeatureFunction.entropy(data_frame[col1])
-        col2_entropy = FeatureFunction.entropy(data_frame[col2])
-        col1_col2_entropy = FeatureFunction.entropy(
-            zip(data_frame[col1], data_frame[col2]))
-        return col1_entropy + col2_entropy - col1_col2_entropy
+        entropy1 = FeatureFunction.entropy(data1)
+        entropy2 = FeatureFunction.entropy(data2)
+        entropy12 = FeatureFunction.entropy(zip(data1, data2))
+        return entropy1 + entropy2 - entropy12
 
     @staticmethod
     def conditional_entropy(data_frame, col1, col2):
@@ -261,32 +276,49 @@ class FeatureFunction:
         return col1_col2_entropy - col2_entropy
 
     @staticmethod
-    def correlation_analysis(data_frame):
+    def correlation_analysis(data_frame, data_frame_other=pd.DataFrame()):
         """相关性分析
         Args:
-            data_frame : 离散数列
-
+            data_frame : 样本1
+            data_frame_other : 样本2
         Returns:
-            float: 熵值
+            numeric_corr, object_corr: 数值相关性矩阵，离散相关性矩阵
         """
-        object_cols = data_frame.select_dtypes(include='object').columns
-        numeric_cols = data_frame.select_dtypes(exclude='object').columns
 
         # 连续性变量相关性
-        corr_df = data_frame[numeric_cols].corr().fillna(0)
-        corr_index = list(corr_df.index.values)
-        corr_index.reverse()
-        numeric_corr = corr_df.loc[corr_index, :]
+
+        if not data_frame_other.empty:
+            corrcoef = data_frame.corrwith(data_frame_other).fillna(0)
+            size = len(corrcoef)
+            corrmat = np.eye(size, size)
+            for i in range(size):
+                corrmat[i, i] = corrcoef[i]
+            corr_df = pd.DataFrame(corrmat,
+                                   index=corrcoef.index,
+                                   columns=corrcoef.index)
+        else:
+            corr_df = data_frame.corr().fillna(0)
+
+        numeric_corr = corr_df.loc[corr_df.index[::-1], :]
 
         # 离散变量相关性
+        object_cols = data_frame.select_dtypes(include='object').columns
         object_corr = pd.DataFrame()
-        for x_col in object_cols:
-            for y_col in object_cols:
-                object_corr.loc[x_col, y_col] = FeatureFunction.gain_entropy(
-                    data_frame, x_col, y_col)
-        corr_index = list(object_cols.values)
-        corr_index.reverse()
-        object_corr = object_corr.loc[corr_index, :]
+        if not data_frame_other.empty:
+            object_cols_other = data_frame_other.select_dtypes(
+                include='object').columns
+            object_cols = object_cols | object_cols_other
+            for col in object_cols:
+                object_corr.loc[col, col] = FeatureFunction.gain_entropy(
+                    data_frame[col], data_frame_other[col])
+        else:
+            for x_col in object_cols:
+                for y_col in object_cols:
+                    object_corr.loc[x_col,
+                                    y_col] = FeatureFunction.gain_entropy(
+                                        data_frame[x_col], data_frame[y_col])
+
+        object_corr = object_corr.loc[object_corr.index[::-1], :]
         return numeric_corr, object_corr
 
     @staticmethod
