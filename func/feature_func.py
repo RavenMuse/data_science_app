@@ -126,6 +126,8 @@ class FeatureFunction:
 
             cluster = kmeans.fit_predict(data_frame[[col]].values)
             data_frame.loc[:, col + '_binno'] = cluster
+            data_frame.loc[:, col + '_bin'] = 'cluster_' + data_frame[
+                col + '_binno'].astype(str)
 
     @staticmethod
     def fill_na(data_frame, cols, strategy='mean', fill_value=None):

@@ -153,6 +153,12 @@ class DataToolsApp:
             return data.to_csv(index=False, encoding='utf_8_sig')
 
         col1, col2 = st.columns([0.8, 0.2])
+
+        col_names = col1.multiselect('请选择待删除的列：', data.columns)
+        col2.write('&nbsp;')
+        if col2.button('删除', key='delete_col'):
+            data.drop(col_names, axis=1, inplace=True)
+        col1, col2 = st.columns([0.8, 0.2])
         file_name_new = col1.text_input('请输入保存文件名：',
                                         file_name.split('.')[0] + '_new.csv')
         col2.write('&nbsp;')

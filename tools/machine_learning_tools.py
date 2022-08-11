@@ -44,6 +44,8 @@ class MachineLearingTools(Tools):
         self.add_tool_func('linear_regression', self.linear_regression)
         ex.checkbox("树回归", key='tree_regression')
         self.add_tool_func('tree_regression', self.tree_regression)
+        ex.checkbox("序列回归", key='sequential_regression')
+        self.add_tool_func('sequential_regression', self.sequential_regression)
 
     def over_sampling(self, data):
         with st.expander('过采样', True):
@@ -135,4 +137,8 @@ class MachineLearingTools(Tools):
 
     def tree_regression(self, data):
         with st.expander('树回归', True):
+            st.write('coding')
+
+    def sequential_regression(self, data):
+        with st.expander('序列回归', True):
             st.write('coding')

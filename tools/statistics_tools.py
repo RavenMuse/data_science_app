@@ -40,6 +40,11 @@ class StatisticsTools(Tools):
         self.add_tool_func('non_parameter_test', self.non_parameter_test)
 
         ex.markdown("##### 时序分析")
+        ex.checkbox("序列分析", key='sequential_analysis')
+        self.add_tool_func('sequential_analysis', self.sequential_analysis)
+
+        ex.checkbox("平稳性检验", key='stationarity_test')
+        self.add_tool_func('stationarity_test', self.stationarity_test)
 
         ex.markdown("##### 高级分析")
         ex.checkbox("综合评估", key='comprehensive_evaluation')
@@ -67,24 +72,6 @@ class StatisticsTools(Tools):
             col1.dataframe(info_table, height=300)
 
             col2.dataframe(data.describe(), height=300)
-
-            # info_table = go.Figure(data=[
-            #     go.Table(
-            #         header=dict(values=['列名', '非空数据量', '类型', '内存占用量'],
-            #                     align='left'),
-            #         cells=dict(values=[
-            #             data.columns.values,
-            #             data.count().values,
-            #             data.dtypes.apply(lambda x: x.name).values,
-            #             (np.round(
-            #                 data.memory_usage(index=False, deep=True) /
-            #                 1028, 2).astype(str) + 'Kb').values
-            #         ],
-            #                    align='left'))
-            # ])
-            # info_table.update_layout(height=150,
-            #                          margin=dict(t=0, l=10, r=10, b=0))
-            # st.plotly_chart(info_table, use_container_width=True)
 
     def single_dim_analysis(self, data):
         with st.expander('单维分析', True):
@@ -161,15 +148,15 @@ class StatisticsTools(Tools):
                         return f'<font color=Lime>正态</font>，P=`{pvalue}` 大于置信系数0.05'
 
                 st.write(
-                    f" **Shapiro-Wilk** 检验：{__get_test_text(stats.shapiro(col_data).pvalue)}",
+                    f" **Shapiro-Wilk检验**：{__get_test_text(stats.shapiro(col_data).pvalue)}",
                     unsafe_allow_html=True)
                 st.write(
-                    f" **Normaltest** 检验：{__get_test_text(stats.normaltest(col_data).pvalue)}，结合峰度检验和偏度检验得出",
+                    f" **Normaltest检验**：{__get_test_text(stats.normaltest(col_data).pvalue)}，结合峰度检验和偏度检验得出",
                     unsafe_allow_html=True)
                 target_dist = stats.norm(loc=col_stats['mean'],
                                          scale=col_data.std(ddof=1))
                 st.write(
-                    f"**Kolmogorov-Smirnov** 检验：{__get_test_text(stats.kstest(col_data, target_dist.cdf).pvalue)}，使用样本无偏量估计参数构建正态分布",
+                    f"**Kolmogorov-Smirnov检验**：{__get_test_text(stats.kstest(col_data, target_dist.cdf).pvalue)}，使用样本无偏量估计参数构建正态分布",
                     unsafe_allow_html=True)
                 # mean_p = col_stats['mean'] - col_stats['min']
                 # shape = (mean_p**2) / (col_stats['std']**2)
@@ -264,6 +251,10 @@ class StatisticsTools(Tools):
                               use_container_width=True)
             col2.plotly_chart(px.imshow(object_corr), use_container_width=True)
 
+            st.info(
+                "连续变量Pearson相关系数p，p<0：负相关，p>0：正相关，p=0：不相关 ； 离散变量信息增益系数p，p越大相关性越强"
+            )
+
     def parameter_test(self, _):
         with st.expander('参数检验', True):
             col1, col2 = st.columns([0.2, 0.8])
@@ -283,8 +274,12 @@ class StatisticsTools(Tools):
                 exclude=['object']).columns
             sample2_numeric_cols = sample2.select_dtypes(
                 exclude=['object']).columns
-            first_dim = col1.selectbox('第一个维度', sample1_numeric_cols)
-            second_dim = col1.selectbox('第二个维度', sample2_numeric_cols)
+            first_dim = col1.selectbox('第一个维度',
+                                       sample1_numeric_cols,
+                                       key='parameter_dim1')
+            second_dim = col1.selectbox('第二个维度',
+                                        sample2_numeric_cols,
+                                        key='parameter_dim2')
 
             col_data1 = sample1[first_dim]
             col_data2 = sample2[second_dim]
@@ -295,9 +290,9 @@ class StatisticsTools(Tools):
 
             def __get_test_text(pvalue):
                 if pvalue < 0.05:
-                    return f'<font color=Red>有显著性差异</font>，P=`{pvalue}` 小于置信系数0.05'
+                    return f'<font color=Lime>有显著性差异</font>，P=`{pvalue}` 小于置信系数0.05'
                 else:
-                    return f'<font color=Lime>无显著性差异</font>，P=`{pvalue}` 大于置信系数0.05'
+                    return f'<font color=Red>无显著性差异</font>，P=`{pvalue}` 大于置信系数0.05'
 
             col2.write('方差检验')
             levene_p = stats.levene(col_data1, col_data2).pvalue
@@ -306,7 +301,8 @@ class StatisticsTools(Tools):
             col2.write(
                 f"- Bartlett检验： {__get_test_text(stats.bartlett(col_data1, col_data2).pvalue)}",
                 unsafe_allow_html=True)
-            col2.write('&nbsp;')
+
+            col2.info("注：Bartlett检验要求样本近似正态")
             col2.write('均值检验')
             col2.write(
                 f"- T检验（独立样本）： {__get_test_text(stats.ttest_ind(col_data1, col_data2,equal_var=levene_p>0.05).pvalue)}",
@@ -314,10 +310,134 @@ class StatisticsTools(Tools):
             col2.write(
                 f"- T检验（配对样本）： {__get_test_text(stats.ttest_rel(col_data1, col_data2).pvalue)}",
                 unsafe_allow_html=True)
+            col2.write(
+                f"- F检验（ANOVA）： {__get_test_text(stats.f_oneway(col_data1, col_data2).pvalue)}",
+                unsafe_allow_html=True)
+            col2.info("注：T检验、F检验要求样本近似正态，F检验（方差分析）常用于验证外部因素对前后数据的影响")
+            col2.write('同分布检验')
+            col2.write(
+                f"- Kolmogorov-Smirnov检验： {__get_test_text(stats.ks_2samp(col_data1, col_data2).pvalue)}",
+                unsafe_allow_html=True)
+            col2.write(
+                f"- Epps-Singleton检验： {__get_test_text(stats.epps_singleton_2samp(col_data1, col_data2).pvalue)}",
+                unsafe_allow_html=True)
+            col2.write(
+                f"- Cramér-von Mises检验： {__get_test_text(stats.cramervonmises_2samp(col_data1, col_data2).pvalue)}",
+                unsafe_allow_html=True)
 
-    def non_parameter_test(self, data):
+    def non_parameter_test(self, _):
         with st.expander('非参检验', True):
-            st.write('conding')
+            col1, col2 = st.columns([0.2, 0.8])
+            options = st.session_state.data.keys()
+            sample_names = col1.multiselect(
+                '选择一个或两个样本',
+                options,
+                key='nonparameter_test_multiselect',
+                default=list(options)[0])
+            if len(sample_names) == 0:
+                return
+
+            if len(sample_names) == 1:
+                is_contingency_test = col1.checkbox('列联表检验',
+                                                    key='is_contingency_test')
+            else:
+                is_contingency_test = False
+
+            if is_contingency_test:
+                sample1 = st.session_state.data[sample_names[0]]
+                object_cols = sample1.select_dtypes(include=['object']).columns
+                if len(object_cols) == 0:
+                    st.warning('无离散维度！')
+                    return
+                first_dim = col1.selectbox('离散维度', object_cols)
+                second_dim = col1.selectbox('状态维度', object_cols)
+
+                crosstab = pd.crosstab(sample1[first_dim], sample1[second_dim])
+
+                def __get_test_text(pvalue):
+                    if pvalue < 0.05:
+                        return f'<font color=Lime>离散变量与观察状态有关</font>，P=`{pvalue}` 小于置信系数0.05'
+                    else:
+                        return f'<font color=Red>离散变量与观察状态无关</font>，P=`{pvalue}` 大于置信系数0.05'
+
+                col2.write('列联表')
+                col2.write(crosstab, height=200)
+                col2.write('列联表检验')
+                chi2, p, dof, expected = stats.chi2_contingency(crosstab)
+                col2.write(f"- 卡方检验： {__get_test_text(p)}",
+                           unsafe_allow_html=True)
+                if crosstab.shape == (2, 2):
+                    col2.write(
+                        f"- Fisher检验： {__get_test_text(stats.fisher_exact(crosstab)[1])}",
+                        unsafe_allow_html=True)
+                    col2.write(
+                        f"- Barnard检验： {__get_test_text(stats.barnard_exact(crosstab).pvalue)}",
+                        unsafe_allow_html=True)
+                    col2.write(
+                        f"- Boschloo检验： {__get_test_text(stats.boschloo_exact(crosstab).pvalue)}",
+                        unsafe_allow_html=True)
+                    col2.info(
+                        "注：Fisher精准检验在状态频数小于5时可靠性强，Barnard精准检验场景广，但要求状态相互独立不干涉"
+                    )
+
+            else:
+                sample1 = sample2 = st.session_state.data[sample_names[0]]
+                if len(sample_names) > 1:
+                    sample2 = st.session_state.data[sample_names[1]]
+
+                sample1_numeric_cols = sample1.select_dtypes(
+                    exclude=['object']).columns
+                sample2_numeric_cols = sample2.select_dtypes(
+                    exclude=['object']).columns
+                first_dim = col1.selectbox('第一个维度',
+                                           sample1_numeric_cols,
+                                           key='nonparameter_dim1')
+                second_dim = col1.selectbox('第二个维度',
+                                            sample2_numeric_cols,
+                                            key='nonparameter_dim2')
+
+                col_data1 = sample1[first_dim]
+                col_data2 = sample2[second_dim]
+
+                if len(col_data1) != len(col_data2):
+                    col1.warning('样本大小不同，无法检验！')
+                    return
+                if first_dim == second_dim:
+                    col1.warning('维度相同，无法检验！')
+                    return
+
+                def __get_test_text(pvalue):
+                    if pvalue < 0.05:
+                        return f'<font color=Lime>有显著性差异</font>，P=`{pvalue}` 小于置信系数0.05'
+                    else:
+                        return f'<font color=Red>无显著性差异</font>，P=`{pvalue}` 大于置信系数0.05'
+
+                col2.write('秩检验')
+                col2.write(
+                    f"- Wilcoxon检验： {__get_test_text(stats.wilcoxon(col_data1, col_data2).pvalue)}",
+                    unsafe_allow_html=True)
+                col2.write(
+                    f"- Mann-Whitney-U检验：{__get_test_text(stats.mannwhitneyu(col_data1, col_data2).pvalue)}",
+                    unsafe_allow_html=True)
+                col2.info("注：秩检验要求样本足够大，对数据分布无要求，常用于非正态大样本数据")
+                col2.write('其他检验')
+                col2.write(
+                    f"- Fligner-Killeen检验（方差）： {__get_test_text(stats.fligner(col_data1, col_data2).pvalue)}",
+                    unsafe_allow_html=True)
+                col2.write(
+                    f"- Ansari-Bradley检验（尺度）： {__get_test_text(stats.ansari(col_data1, col_data2).pvalue)}",
+                    unsafe_allow_html=True)
+                col2.write(
+                    f"- Mood检验（尺度）： {__get_test_text(stats.mood(col_data1, col_data2)[1])}",
+                    unsafe_allow_html=True)
+
+    def sequential_analysis(self, data):
+        with st.expander('序列分析', True):
+            st.write('coding')
+
+    def stationarity_test(self, data):
+        with st.expander('平稳性检验', True):
+            st.write('coding')
 
     def factor_analysis(self, data):
         with st.expander('因子分析', True):
