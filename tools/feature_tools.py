@@ -132,6 +132,23 @@ class FeatureTools(Tools):
                 help_str=
                 "变换系数，逗号分隔；对数变换：lambda=0，倒数变换：lambda=-1，平方根变换：lambda=0.5")
 
+            st.write('分配等级')
+            col1, col2 = st.columns([0.5, 0.5])
+            assign_type_dict = {
+                'dense': '排行（有同值）',
+                'ordinal': '排行（无同值）',
+                'average': '秩'
+            }
+            col_names = col1.multiselect('维度', numeric_cols)
+            assign_type, _ = col2.radio("分配方式",
+                                        assign_type_dict.items(),
+                                        format_func=lambda x: x[1],
+                                        horizontal=True)
+
+            for name in col_names:
+                data.loc[:, name + '_rank'] = stats.rankdata(
+                    data[name], assign_type)
+
     def numeric(self, data):
         object_cols = data.select_dtypes(include=['object']).columns
         with st.expander('数值化', True):

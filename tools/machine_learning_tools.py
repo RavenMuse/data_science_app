@@ -4,6 +4,8 @@ import numpy as np
 import sys
 from sklearn.cluster import *
 import plotly.express as px
+import plotly.graph_objects as go
+from statsmodels.tsa.arima.model import ARIMA
 from sklearn import manifold
 
 from .tools import Tools
@@ -141,4 +143,23 @@ class MachineLearingTools(Tools):
 
     def sequential_regression(self, data):
         with st.expander('序列回归', True):
-            st.write('coding')
+            col1, col2 = st.columns([0.2, 0.8])
+            numeric_cols = data.select_dtypes(exclude=['object']).columns
+            col = col1.selectbox('时序维度', numeric_cols, key='time_regression')
+            p = col1.number_input('自回归阶数P', min_value=0, value=1)
+            q = col1.number_input('移动平均阶数Q', min_value=0, value=1)
+            d = col1.number_input('差分阶数D', min_value=0, max_value=3, value=0)
+
+            model = ARIMA(data[col], order=(p, d, q)).fit()
+
+            fig = go.Figure()
+            x = list(range(len(data)))
+            fig.add_trace(
+                go.Scatter(x=x, y=data[col], mode='lines', name='real'))
+            fig.add_trace(
+                go.Scatter(x=x[d:],
+                           y=model.fittedvalues[d:],
+                           mode='lines',
+                           name='predict'))
+            col2.plotly_chart(fig, use_container_width=True)
+            col2.write(model.summary())

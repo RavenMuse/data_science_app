@@ -3,9 +3,11 @@ import pandas as pd
 import numpy as np
 import sys
 from scipy import stats
+import statsmodels.tsa.stattools as ts
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.figure_factory as pff
+from factor_analyzer import FactorAnalyzer, calculate_kmo, calculate_bartlett_sphericity
 from .tools import Tools
 
 sys.path.append("..")
@@ -42,9 +44,6 @@ class StatisticsTools(Tools):
         ex.markdown("##### 时序分析")
         ex.checkbox("序列分析", key='sequential_analysis')
         self.add_tool_func('sequential_analysis', self.sequential_analysis)
-
-        ex.checkbox("平稳性检验", key='stationarity_test')
-        self.add_tool_func('stationarity_test', self.stationarity_test)
 
         ex.markdown("##### 高级分析")
         ex.checkbox("综合评估", key='comprehensive_evaluation')
@@ -433,14 +432,53 @@ class StatisticsTools(Tools):
 
     def sequential_analysis(self, data):
         with st.expander('序列分析', True):
-            st.write('coding')
 
-    def stationarity_test(self, data):
-        with st.expander('平稳性检验', True):
-            st.write('coding')
+            numeric_cols = data.select_dtypes(exclude=['object']).columns
+            col1, col2 = st.columns([0.2, 0.8])
+            col = col1.selectbox('时序维度', numeric_cols)
+            diff = col1.slider('差分阶数', min_value=0, max_value=3, value=0)
+            col_data = data[col] if diff == 0 else data[col].diff(
+                diff).dropna()
+
+            fig = px.line(col_data, title='时序图')
+            col2.plotly_chart(fig, use_container_width=True)
+
+            # 平稳性检验
+            stats_val, p_val, _, _, stats_dic, _ = ts.adfuller(col_data)
+
+            if p_val < 0.05 and stats_val < stats_dic['1%']:
+                text = f"<font color=Lime>十分平稳</font>，P=`{p_val}` 小于置信系数0.05，统计值`{stats_val}`小于1%阈值`{stats_dic['1%']}`"
+            elif p_val < 0.05 and stats_dic['1%'] < stats_val < stats_dic['5%']:
+                text = f"<font color=Lime>相对平稳</font>，P=`{p_val}` 小于置信系数0.05，统计值`{stats_val}`介于1%、5%阈值[`{stats_dic['1%']}`,`{stats_dic['5%']}`]"
+            else:
+                text = f'<font color=Red>不平稳</font>，P=`{p_val}` 大于置信系数0.05；建议进行差分处理'
+
+            col2.write(f"Augmented Dickey-Fuller（ADF）检验： {text}",
+                       unsafe_allow_html=True)
+
+            pacf = ts.pacf(col_data, method='ols')
+            acf = ts.acf(col_data)
+
+            # fig_df = pd.DataFrame(zip(np.append(
+            #     acf, pacf), ['acf'] * len(acf) + ['pacf'] * len(pacf)),
+            #                       columns=['value', 'type'])
+            acf_df = pd.DataFrame(zip(acf, ['acf'] * len(acf)),
+                                  columns=['value', 'type']).reset_index()
+            pacf_df = pd.DataFrame(zip(pacf, ['pacf'] * len(acf)),
+                                   columns=['value', 'type']).reset_index()
+            fig_df = acf_df.append(pacf_df).rename(columns={'index': 'lags'})
+            fig = px.bar(fig_df,
+                         x='lags',
+                         y='value',
+                         color='type',
+                         barmode='group',
+                         title='ACF/PACF')
+
+            col2.plotly_chart(fig, use_container_width=True)
 
     def factor_analysis(self, data):
         with st.expander('因子分析', True):
+
             st.write('conding')
 
     def comprehensive_evaluation(self, data):
