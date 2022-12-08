@@ -178,7 +178,8 @@ class StatisticsTools(Tools):
                 'scatter': '散点图',
                 'line': '折线图',
                 'bar': '柱状图',
-                'violin': '提琴图'
+                'violin': '提琴图',
+                'sunburst': '旭日图'
             }
             chart_type, _ = col1.selectbox("图表",
                                            chart_type_dict.items(),
@@ -207,7 +208,9 @@ class StatisticsTools(Tools):
             if chart_type == 'bar':
                 x_col = col1.selectbox("X", data.columns)
                 y_col = col1.selectbox("Y", data.columns, index=1)
-                fig = px.bar(data, x=x_col, y=y_col)
+                color = col1.selectbox("Color", object_cols)
+                text = col1.selectbox("Text", object_cols)
+                fig = px.bar(data, x=x_col, y=y_col, color=color, text=text)
 
             if chart_type == 'line':
                 x_col = col1.selectbox("X", data.columns)
@@ -219,6 +222,17 @@ class StatisticsTools(Tools):
                     x_col = col1.selectbox("X", object_cols)
                     y_col = col1.selectbox("Y", numeric_cols, index=1)
                     fig = px.violin(data, x=x_col, y=y_col)
+                else:
+                    fig = None
+
+            if chart_type == 'sunburst':
+                if not object_cols.empty:
+                    path = col1.multiselect("Path", object_cols)
+                    if col1.checkbox('按值统计'):
+                        value = col1.selectbox("Value", numeric_cols, index=1)
+                        fig = px.sunburst(data, path=path, values=value)
+                    else:
+                        fig = px.sunburst(data, path=path)
                 else:
                     fig = None
 
@@ -475,6 +489,10 @@ class StatisticsTools(Tools):
                          title='ACF/PACF')
 
             col2.plotly_chart(fig, use_container_width=True)
+
+            col2.info(
+                """ACF/PACF 解析 \n - AR(p)模型：ACF-拖尾、PACF-p阶截尾 \n - MA(q)模型：ACF-q阶截尾、PACF-拖尾 \n - ARMA(p,q)：ACF-拖尾、PACF--拖尾 \n **拖尾**：为无论如何都不会为0，而是在某阶之后在0附近随机变化 ； **截尾**：在大于某阶后快速趋于0"""
+            )
 
     def factor_analysis(self, data):
         with st.expander('因子分析', True):
