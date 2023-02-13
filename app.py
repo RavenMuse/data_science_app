@@ -102,7 +102,7 @@ class DataToolsApp:
         if 'data' not in st.session_state:
             st.session_state.data = {'default_sample': data}
             st.session_state.data_count = 1
-            st.session_data.last_sample = True
+            st.session_state.last_sample = True
 
         col2.write('###### 样本管理')
         sample_name = col2.text_input('新样本名称', f'{table_name}_new')
@@ -114,7 +114,7 @@ class DataToolsApp:
                 if sample_name not in st.session_state.data:
                     st.session_state.data_count += 1
                 st.session_state.data[sample_name] = data
-                st.session_data.last_sample = False
+                st.session_state.last_sample = False
 
         def __on_remove():
             if st.session_state.data_count != 1:
@@ -123,7 +123,7 @@ class DataToolsApp:
                 st.session_state.current_sample = list(
                     st.session_state.data.keys())[-1]
             else:
-                st.session_data.last_sample = True
+                st.session_state.last_sample = True
 
         remove_btn = col3.button('删除样本', on_click=__on_remove)
         options = st.session_state.data.keys()
@@ -136,7 +136,7 @@ class DataToolsApp:
         col2.write(
             f'`内存占用：{np.round(data.memory_usage(index=True, deep=True).sum()/1028,2)} KB`'
         )
-        if remove_btn and st.session_data.last_sample:
+        if remove_btn and st.session_state.last_sample:
             st.warning('至少需要一个样本！')
 
         return data, file_name
@@ -265,6 +265,7 @@ class DataToolsApp:
                     tools.use_tool(data)
             with tabs[-1]:
                 self.__save_data(data, file_name)
+
         self.__authenticator.logout('退出登录', 'sidebar')
 
 
@@ -274,3 +275,11 @@ app.add_tool(StatisticsTools())
 app.add_tool(MachineLearingTools())
 
 app.run()
+
+# from streamlit_echarts import st_echarts
+# import json
+
+# def render_simple_graph():
+#     option = st.text_area('test')
+#     st_echarts(json.loads(option), height="1000px")
+# render_simple_graph()

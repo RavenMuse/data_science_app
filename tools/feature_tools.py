@@ -94,6 +94,8 @@ class FeatureTools(Tools):
         with st.expander('降噪', True):
             cols = st.multiselect('离群点降噪', numeric_cols)
             ff.outlier_denoising(data, cols)
+            if st.checkbox('剔除噪声数据'):
+                data.dropna(subset=cols)
 
     def number_transform(self, data):
         with st.expander('数值变换', True):

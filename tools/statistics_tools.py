@@ -210,7 +210,14 @@ class StatisticsTools(Tools):
                 y_col = col1.selectbox("Y", data.columns, index=1)
                 color = col1.selectbox("Color", object_cols)
                 text = col1.selectbox("Text", object_cols)
-                fig = px.bar(data, x=x_col, y=y_col, color=color, text=text)
+                barmode = col1.radio('barmode', ['group', 'relative'],
+                                     horizontal=True)
+                fig = px.bar(data,
+                             x=x_col,
+                             y=y_col,
+                             color=color,
+                             text=text,
+                             barmode=barmode)
 
             if chart_type == 'line':
                 x_col = col1.selectbox("X", data.columns)
