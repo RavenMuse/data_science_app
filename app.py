@@ -5,7 +5,6 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import streamlit_authenticator as stauth
-# from streamlit_elements import elements, mui, html, dashboard
 from pandasql import sqldf
 from streamlit_ace import st_ace
 from datetime import datetime, timedelta
@@ -13,6 +12,7 @@ from authenticate import Authenticate
 from tools.feature_tools import FeatureTools
 from tools.statistics_tools import StatisticsTools
 from tools.machine_learning_tools import MachineLearingTools
+from utils import PROJECT_ROOT
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -68,8 +68,7 @@ class DataToolsApp:
 
         if not paths:
             table_name = 'iris'
-            locals()[table_name] = __load_data(
-                '/data/data_science_app/iris.csv')
+            locals()[table_name] = __load_data(f'{PROJECT_ROOT}/data/iris.csv')
             file_name = 'iris.csv'
         else:
             for path in paths:
@@ -170,17 +169,7 @@ class DataToolsApp:
         )
 
     def __load_style(self):
-        # st.markdown(
-        #     """
-        # <style>
-        # [data-testid=stSidebar] :first-child {
-        #     background-color: rgb(48 47 45);
-        #     color: white;
-        # }
-        # </style>
-        # """,
-        #     unsafe_allow_html=True,
-        # )
+
         st.markdown(
             """
         <style>
@@ -230,7 +219,7 @@ class DataToolsApp:
             return
         self.__load_style()
         # menu picture
-        st.sidebar.image('/data/data_science_app/logo/menu_black.png')
+        st.sidebar.image(f'{PROJECT_ROOT}/pic/menu_black.png')
 
         st.sidebar.markdown("""
         """)
@@ -269,17 +258,10 @@ class DataToolsApp:
         self.__authenticator.logout('退出登录', 'sidebar')
 
 
-app = DataToolsApp()
-app.add_tool(FeatureTools())
-app.add_tool(StatisticsTools())
-app.add_tool(MachineLearingTools())
+if __name__ == '__main__':
+    app = DataToolsApp()
+    app.add_tool(FeatureTools())
+    app.add_tool(StatisticsTools())
+    app.add_tool(MachineLearingTools())
 
-app.run()
-
-# from streamlit_echarts import st_echarts
-# import json
-
-# def render_simple_graph():
-#     option = st.text_area('test')
-#     st_echarts(json.loads(option), height="1000px")
-# render_simple_graph()
+    app.run()

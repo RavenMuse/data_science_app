@@ -8,10 +8,6 @@ import requests
 
 from streamlit_lottie import st_lottie
 from streamlit_lottie import st_lottie_spinner
-# from .hasher import Hasher
-# from .utils import generate_random_pw
-
-# from .exceptions import CredentialsError, ResetError, RegisterError, ForgotError, UpdateError
 
 
 class Authenticate:
