@@ -21,8 +21,12 @@ The goal is to provide an easy-to-use web interface for both technical and non-t
 
 ### Prerequisites
 
-- Python 3.7+ 
-- Required packages: numpy, pandas, scikit-learn, matplotlib, seaborn, streamlit, statsmodels, scipy
+You will need Python 3.6 or higher installed on your system.
+
+The Python package dependencies for this project are listed in requirements.txt. You can generate by `pipreqs --encoding utf-8-sig ./`
+
+It is recommended to install these in a virtual environment.
+
 
 ### Installation
 

@@ -1,5 +1,4 @@
-﻿# -*- encoding:utf-8 -*-
-import os
+﻿import os
 import csv
 import json
 import h5py
@@ -62,7 +61,8 @@ def list_file(path, filter_str=None):
     if filter_str is None:
         result = os.listdir(path)
     else:
-        result = list(filter(lambda x: x.__contains__(filter_str), os.listdir(path)))
+        result = list(
+            filter(lambda x: x.__contains__(filter_str), os.listdir(path)))
     print("==============Path: %s List==============" % path)
     print(result)
     print("=============================================")
@@ -148,7 +148,8 @@ class IOTools:
                 header = next(reader) if has_header else ""
                 data = [row for row in reader]
         except csv.Error as e:
-            print("Error rreading CSV file as line %s: %s" % (reader.line_num, e))
+            print("Error rreading CSV file as line %s: %s" %
+                  (reader.line_num, e))
             sys.exit(-1)
         if has_header:
             print("========= columns name =============")
@@ -202,12 +203,14 @@ class IOTools:
         """
 
         with h5py.File(path, 'w') as f:
-            if not isinstance(groups, list): raise TypeError("Type of groups should be list.")
+            if not isinstance(groups, list):
+                raise TypeError("Type of groups should be list.")
 
             if isinstance(data, list) and isinstance(data[0], dict):
                 for i in range(0, len(groups)):
                     group = f.require_group(groups[i])
-                    for key in data[i]: group.create_dataset(key, data=data[i][key])
+                    for key in data[i]:
+                        group.create_dataset(key, data=data[i][key])
             else:
                 raise TypeError("Type of data should be list(dict).")
 
@@ -260,7 +263,8 @@ class ImageTools:
             self._height = box_size[1]
             self._x_num = int(xsize / self._width)
             self._y_num = int(ysize / self._height)
-            self._iter = itertools.product(range(self._y_num), range(self._x_num))
+            self._iter = itertools.product(range(self._y_num),
+                                           range(self._x_num))
 
         def __iter__(self):
             return self
@@ -276,7 +280,8 @@ class ImageTools:
             (y, x) = self._iter.__next__()
             # crop (a,b,c,d) , (a,b) left top position , (c,d) right bottom position
             return self._image.crop(
-                (x * self._width, y * self._height, (x + 1) * self._width, (y + 1) * self._height)), (y, x)
+                (x * self._width, y * self._height, (x + 1) * self._width,
+                 (y + 1) * self._height)), (y, x)
 
     class ImageCombiner:
         """
@@ -298,8 +303,10 @@ class ImageTools:
             :return:
             """
             width, height = pil_image.size
-            self._new_image.paste(pil_image, (positon[1] * width, positon[0] * height,
-                                              (positon[1] + 1) * width, (positon[0] + 1) * height))
+            self._new_image.paste(pil_image,
+                                  (positon[1] * width, positon[0] * height,
+                                   (positon[1] + 1) * width,
+                                   (positon[0] + 1) * height))
 
         def finish(self):
             """
@@ -318,7 +325,8 @@ class ImageTools:
         im = Image.open(path)
 
         print("========== Image Info ==========")
-        print(" format: {0} \n width/height: {1} \n mode: {2}".format(im.format, im.size, im.mode))
+        print(" format: {0} \n width/height: {1} \n mode: {2}".format(
+            im.format, im.size, im.mode))
         print("================================")
         return im
 
@@ -401,7 +409,10 @@ class PandasTools:
         :return: 返回dataframe读取器;
                  格式:dataframe
         """
-        dataframe = pd.read_csv(path, header=0 if has_header else None, sep=sep, dtype=schema)
+        dataframe = pd.read_csv(path,
+                                header=0 if has_header else None,
+                                sep=sep,
+                                dtype=schema)
 
         if has_header:
             print("============= Schema Info ===============")
@@ -423,9 +434,17 @@ class PandasTools:
                  格式:reader
         """
 
-        temp = pd.read_csv(path, header=0 if has_header else None, sep=sep, iterator=True, dtype=schema)
+        temp = pd.read_csv(path,
+                           header=0 if has_header else None,
+                           sep=sep,
+                           iterator=True,
+                           dtype=schema)
 
-        reader = pd.read_csv(path, header=0 if has_header else None, sep=sep, iterator=True, dtype=schema)
+        reader = pd.read_csv(path,
+                             header=0 if has_header else None,
+                             sep=sep,
+                             iterator=True,
+                             dtype=schema)
 
         if has_header:
             print("============= Schema Info ===============")
@@ -447,7 +466,11 @@ class PandasTools:
         :param has_index: 是否包含索引
         :return:
         """
-        data_frame.to_csv(path, index=has_index, header=has_header, sep=sep, encoding="utf-8")
+        data_frame.to_csv(path,
+                          index=has_index,
+                          header=has_header,
+                          sep=sep,
+                          encoding="utf-8")
 
     @staticmethod
     def show_sample(data_frame):
@@ -480,7 +503,11 @@ class ChartTools:
     IPYTHON_MODE = False
 
     @staticmethod
-    def _plot_fig(data, title="", is_image=False, is_online=False, **other_layout):
+    def _plot_fig(data,
+                  title="",
+                  is_image=False,
+                  is_online=False,
+                  **other_layout):
 
         other_layout['title'] = title
 
@@ -488,17 +515,27 @@ class ChartTools:
             plotly.plotly.plot({
                 "data": data,
                 "layout": Layout(other_layout)
-            }, filename=title, auto_open=False, fileopt='overwrite')
+            },
+                               filename=title,
+                               auto_open=False,
+                               fileopt='overwrite')
         else:
             plotly.offline.init_notebook_mode()
             ploter = plotly.offline.iplot if ChartTools.IPYTHON_MODE else plotly.offline.plot
             ploter({
                 "data": data,
                 "layout": Layout(other_layout)
-            }, filename=title + '.html', image='png' if is_image else None)
+            },
+                   filename=title + '.html',
+                   image='png' if is_image else None)
 
     @staticmethod
-    def plot_scatter(data, traces, title="", mode="lines+markers", is_image=False, is_online=False):
+    def plot_scatter(data,
+                     traces,
+                     title="",
+                     mode="lines+markers",
+                     is_image=False,
+                     is_online=False):
         """
         plot scatter
         :param data: [(x,y),(x2,y2)], such as the data of two trace : [([1,2,3],[10,20,30]),([4,5,6],[14,15,18])]
@@ -510,7 +547,10 @@ class ChartTools:
         :return:
         """
 
-        data = [Scatter(x=item[1][0], y=item[1][1], name=item[0], mode=mode) for item in zip(traces, data)]
+        data = [
+            Scatter(x=item[1][0], y=item[1][1], name=item[0], mode=mode)
+            for item in zip(traces, data)
+        ]
 
         ChartTools._plot_fig(data, title, is_image, is_online)
 
@@ -527,8 +567,13 @@ class ChartTools:
 
         """
 
-        data = [Scatter(x=item[1][0], y=item[1][1], name=item[0], line=dict(width=0.5), fill='tozeroy') for item in
-                zip(traces, data)]
+        data = [
+            Scatter(x=item[1][0],
+                    y=item[1][1],
+                    name=item[0],
+                    line=dict(width=0.5),
+                    fill='tozeroy') for item in zip(traces, data)
+        ]
 
         ChartTools._plot_fig(data, title, is_image, is_online)
 
@@ -544,13 +589,23 @@ class ChartTools:
         :return:
         """
 
-        data = [Box(y=item[1], name=item[0], boxpoints='all', jitter=0.3, pointpos=-1.8)
-                for item in zip(traces, data)]
+        data = [
+            Box(y=item[1],
+                name=item[0],
+                boxpoints='all',
+                jitter=0.3,
+                pointpos=-1.8) for item in zip(traces, data)
+        ]
 
         ChartTools._plot_fig(data, title, is_image, is_online)
 
     @staticmethod
-    def plot_scatter3d(data, traces, title="", mode="markers", is_image=False, is_online=False):
+    def plot_scatter3d(data,
+                       traces,
+                       title="",
+                       mode="markers",
+                       is_image=False,
+                       is_online=False):
         """
         plot scatter
         :param data: [(x,y,z),(x2,y2,z2)], such as the data of two trace : [([1,2,3],[10,20,30],[12,13,14]),([4,5,6],[14,15,18],[12,13,14])]
@@ -562,25 +617,28 @@ class ChartTools:
         :return:
         """
 
-        data = [Scatter3d(
-            x=item[1][0],
-            y=item[1][1],
-            z=item[1][2],
-            name=item[0],
-            mode=mode,
-            marker=dict(
-                size=2,
-                line=dict(
-                    width=0.3
-                ),
-                opacity=0.8,
-
-            )) for item in zip(traces, data)]
+        data = [
+            Scatter3d(x=item[1][0],
+                      y=item[1][1],
+                      z=item[1][2],
+                      name=item[0],
+                      mode=mode,
+                      marker=dict(
+                          size=2,
+                          line=dict(width=0.3),
+                          opacity=0.8,
+                      )) for item in zip(traces, data)
+        ]
 
         ChartTools._plot_fig(data, title, is_image, is_online)
 
     @staticmethod
-    def plot_surface3d(data, traces, title="", mode="markers", is_image=False, is_online=False):
+    def plot_surface3d(data,
+                       traces,
+                       title="",
+                       mode="markers",
+                       is_image=False,
+                       is_online=False):
         """
         plot scatter
         :param data: [(x,y,z),(x2,y2,z2)], such as the data of two trace : [([1,2,3],[10,20,30],[12,13,14]),([4,5,6],[14,15,18],[12,13,14])]
@@ -592,25 +650,29 @@ class ChartTools:
         :return:
         """
 
-        data = [Scatter3d(
-            x=item[1][0],
-            y=item[1][1],
-            z=item[1][2],
-            name=item[0],
-            mode=mode,
-            marker=dict(
-                size=2,
-                line=dict(
-                    width=0.3
-                ),
-                opacity=0.8,
-
-            )) for item in zip(traces, data)]
+        data = [
+            Scatter3d(x=item[1][0],
+                      y=item[1][1],
+                      z=item[1][2],
+                      name=item[0],
+                      mode=mode,
+                      marker=dict(
+                          size=2,
+                          line=dict(width=0.3),
+                          opacity=0.8,
+                      )) for item in zip(traces, data)
+        ]
 
         ChartTools._plot_fig(data, title, is_image, is_online)
 
     @staticmethod
-    def plot_bar(data, traces, title="", orientation="v", barmode="group", is_image=False, is_online=False):
+    def plot_bar(data,
+                 traces,
+                 title="",
+                 orientation="v",
+                 barmode="group",
+                 is_image=False,
+                 is_online=False):
         """
         plot scatter
         :param data: [(x,y),(x2,y2)], such as the data of two trace : [(['a','b','c'],[10,20,30]),(['a','b','c'],[14,15,18])]
@@ -624,9 +686,13 @@ class ChartTools:
         """
 
         data = [
-            Bar(x=item[1][0], y=item[1][1], name=item[0], text=item[1][1], textposition='auto', orientation=orientation)
-            for item in
-            zip(traces, data)]
+            Bar(x=item[1][0],
+                y=item[1][1],
+                name=item[0],
+                text=item[1][1],
+                textposition='auto',
+                orientation=orientation) for item in zip(traces, data)
+        ]
 
         ChartTools._plot_fig(data, title, is_image, is_online, barmode=barmode)
 
@@ -678,7 +744,8 @@ class SKLTools:
         :param y_predict:
         :return: error
         """
-        return mean_squared_error(np.log(y_true.astype(float)), np.log(y_predict))
+        return mean_squared_error(np.log(y_true.astype(float)),
+                                  np.log(y_predict))
 
     @staticmethod
     def root_mean_squared_log_error(y_true, y_predict):
@@ -705,12 +772,19 @@ class SKLTools:
         feature_selector = SelectFromModel(model, prefit=True)
 
         selected_cols = list(
-            dict(filter(lambda x: x[1] == True, zip(x_train.columns, feature_selector.get_support()))).keys())
+            dict(
+                filter(lambda x: x[1] == True,
+                       zip(x_train.columns,
+                           feature_selector.get_support()))).keys())
 
         return selected_cols
 
     @staticmethod
-    def binary_classification_model_estimation(model, x_feature, y_label, cv=3, learning_curve_scoring=None):
+    def binary_classification_model_estimation(model,
+                                               x_feature,
+                                               y_label,
+                                               cv=3,
+                                               learning_curve_scoring=None):
         """
         二分类模型评估
         :param model:分类模型
@@ -725,35 +799,57 @@ class SKLTools:
             4、None 不绘制学习曲线
         :return:
         """
-        y_probas_forest = cross_val_predict(
-            model, x_feature, y_label, cv=cv, method="predict_proba")
-        y_scores_forest = y_probas_forest[:, 1]  # score = proba of positive class
+        y_probas_forest = cross_val_predict(model,
+                                            x_feature,
+                                            y_label,
+                                            cv=cv,
+                                            method="predict_proba")
+        y_scores_forest = y_probas_forest[:,
+                                          1]  # score = proba of positive class
 
         fpr_forest, tpr_forest, thresholds_forest = roc_curve(
             y_label, y_scores_forest)
-        ChartTools.plot_scatter([(fpr_forest, tpr_forest)], traces=["ROC"], title="ROC")
+        ChartTools.plot_scatter([(fpr_forest, tpr_forest)],
+                                traces=["ROC"],
+                                title="ROC")
         print("auc : %f" % roc_auc_score(y_label, y_scores_forest))
 
         y_predict = cross_val_predict(model, x_feature, y_label, cv=cv)
-        precisions, recalls, thresholds = precision_recall_curve(y_label, y_predict)
-        ChartTools.plot_scatter([(recalls, precisions)], traces=["PRC"], title="PRC")
+        precisions, recalls, thresholds = precision_recall_curve(
+            y_label, y_predict)
+        ChartTools.plot_scatter([(recalls, precisions)],
+                                traces=["PRC"],
+                                title="PRC")
         print('accuracy : %f' % accuracy_score(y_label, y_predict))
         print('recall : %f' % recall_score(y_label, y_predict))
 
         if learning_curve_scoring:
             train_sizes, train_scores, test_scores = learning_curve(
-                model, x_feature, y_label, cv=cv, scoring=learning_curve_scoring)
+                model,
+                x_feature,
+                y_label,
+                cv=cv,
+                scoring=learning_curve_scoring)
             train_scores_mean = np.mean(train_scores, axis=1)
             test_scores_mean = np.mean(test_scores, axis=1)
 
-            title = learning_curve_scoring if (isinstance(learning_curve_scoring, str)) else "scoring"
+            title = learning_curve_scoring if (isinstance(
+                learning_curve_scoring, str)) else "scoring"
 
-            ChartTools.plot_scatter([(train_sizes, train_scores_mean), (train_sizes, test_scores_mean)],
-                                    traces=["train_%s" % title, "test_%s" % title],
-                                    title="LearningCurve")
+            ChartTools.plot_scatter(
+                [(train_sizes, train_scores_mean),
+                 (train_sizes, test_scores_mean)],
+                traces=["train_%s" % title,
+                        "test_%s" % title],
+                title="LearningCurve")
 
     @staticmethod
-    def multi_classification_model_estimation(model, x_feature, y_label, cv=3, learning_curve_scoring='accuracy'):
+    def multi_classification_model_estimation(
+            model,
+            x_feature,
+            y_label,
+            cv=3,
+            learning_curve_scoring='accuracy'):
         """
         多分类模型评估
         :param model:分类模型
@@ -772,15 +868,22 @@ class SKLTools:
         train_scores_mean = np.mean(train_scores, axis=1)
         test_scores_mean = np.mean(test_scores, axis=1)
 
-        title = learning_curve_scoring if (isinstance(learning_curve_scoring, str)) else "scoring"
+        title = learning_curve_scoring if (isinstance(learning_curve_scoring,
+                                                      str)) else "scoring"
 
-        ChartTools.plot_scatter([(train_sizes, train_scores_mean), (train_sizes,
-                                                                    test_scores_mean)],
-                                traces=["train_%s" % title, "test_%s" % title],
+        ChartTools.plot_scatter([(train_sizes, train_scores_mean),
+                                 (train_sizes, test_scores_mean)],
+                                traces=["train_%s" % title,
+                                        "test_%s" % title],
                                 title="LearningCurve")
 
     @staticmethod
-    def regression_model_estimation(model, x_feature, y_label, cv=3, learning_curve_scoring='neg_mean_squared_error'):
+    def regression_model_estimation(
+            model,
+            x_feature,
+            y_label,
+            cv=3,
+            learning_curve_scoring='neg_mean_squared_error'):
         """
         回归模型评估
         :param model:回归模型
@@ -800,15 +903,23 @@ class SKLTools:
 
         if learning_curve_scoring:
             train_sizes, train_scores, test_scores = learning_curve(
-                model, x_feature, y_label, cv=cv, scoring=learning_curve_scoring)
+                model,
+                x_feature,
+                y_label,
+                cv=cv,
+                scoring=learning_curve_scoring)
             train_scores_mean = np.mean(train_scores, axis=1)
             test_scores_mean = np.mean(test_scores, axis=1)
 
-            title = learning_curve_scoring if (isinstance(learning_curve_scoring, str)) else "scoring"
+            title = learning_curve_scoring if (isinstance(
+                learning_curve_scoring, str)) else "scoring"
 
-            ChartTools.plot_scatter([(train_sizes, train_scores_mean), (train_sizes, test_scores_mean)],
-                                    traces=["train_%s" % title, "test_%s" % title],
-                                    title="LearningCurve")
+            ChartTools.plot_scatter(
+                [(train_sizes, train_scores_mean),
+                 (train_sizes, test_scores_mean)],
+                traces=["train_%s" % title,
+                        "test_%s" % title],
+                title="LearningCurve")
 
     class DataFrameSelector(BaseEstimator, TransformerMixin):
         """
@@ -829,7 +940,11 @@ class SKLTools:
         卡方分箱
         """
 
-        def __init__(self, data_frame, class_col, max_number_intervals, threshold=4.61,
+        def __init__(self,
+                     data_frame,
+                     class_col,
+                     max_number_intervals,
+                     threshold=4.61,
                      min_expected_value=0.5):
             """
             停止分箱条件：最小卡方值大于阈值时、分箱数小于最大分箱数
@@ -881,15 +996,19 @@ class SKLTools:
             :return:
             """
 
-            self.sorted_data = self.data[[self.attribute_col, self.class_col]].sort_values(self.attribute_col)
+            self.sorted_data = self.data[[self.attribute_col, self.class_col
+                                          ]].sort_values(self.attribute_col)
 
             # first intervals: unique attribute values
-            self.frequency_matrix_intervals = np.unique(self.sorted_data[self.attribute_col])
+            self.frequency_matrix_intervals = np.unique(
+                self.sorted_data[self.attribute_col])
 
             # 通过交叉视图获取attribute-class统计
-            cross_tab = pd.crosstab(self.sorted_data[self.attribute_col],
-                                    self.sorted_data[self.class_col]).reset_index()
-            self.frequency_matrix = np.array(cross_tab[self.unique_class_values])
+            cross_tab = pd.crosstab(
+                self.sorted_data[self.attribute_col],
+                self.sorted_data[self.class_col]).reset_index()
+            self.frequency_matrix = np.array(
+                cross_tab[self.unique_class_values])
 
             print('')
             print('初始化 列{} 区间:'.format(self.attribute_col))
@@ -916,7 +1035,9 @@ class SKLTools:
                 shape = self.frequency_matrix.shape
                 for r in range(shape[0] - 1):
                     interval = r, r + 1
-                    chi2 = AnalyzeTools.chi2_test(self.frequency_matrix[[interval], :][0], self.min_expected_value)
+                    chi2 = AnalyzeTools.chi2_test(
+                        self.frequency_matrix[[interval], :][0],
+                        self.min_expected_value)
                     if chi2 not in chitest:
                         chitest[chi2] = []
                     chitest[chi2].append((interval))
@@ -934,36 +1055,37 @@ class SKLTools:
                 # 合并操作
                 if smallest <= self.threshold:
                     # print('合并分区(卡方值->分隔点降排索引): chi {} -> {}'.format(smallest, chitest[smallest]))
-                    for (lower, upper) in list(
-                            reversed(chitest[smallest])):
+                    for (lower, upper) in list(reversed(chitest[smallest])):
                         # 合并分区后一个合并至前一个
-                        for col in range(
-                                shape[1]):
-                            self.frequency_matrix[lower, col] += self.frequency_matrix[
-                                upper, col]
+                        for col in range(shape[1]):
+                            self.frequency_matrix[
+                                lower, col] += self.frequency_matrix[upper,
+                                                                     col]
                         # 删除已合并的分区(分隔点的class统计)
-                        self.frequency_matrix = np.delete(self.frequency_matrix, upper,
-                                                          axis=0)
+                        self.frequency_matrix = np.delete(
+                            self.frequency_matrix, upper, axis=0)
                         # 删除已合并的分区(分隔点)
-                        self.frequency_matrix_intervals = np.delete(self.frequency_matrix_intervals, upper,
-                                                                    axis=0)
+                        self.frequency_matrix_intervals = np.delete(
+                            self.frequency_matrix_intervals, upper, axis=0)
                     # print('新分区分隔点: ({}):{}'.format(len(self.frequency_matrix_intervals),
                     #                                self.frequency_matrix_intervals))
                 else:
                     break
 
             chitestvalues = chitest
-            print('结束: 迭代{}次 ，(最小卡方值 {} 大于阈值 {})\n'.format(counter, smallest, self.threshold))
+            print('结束: 迭代{}次 ，(最小卡方值 {} 大于阈值 {})\n'.format(
+                counter, smallest, self.threshold))
 
             print('总结：')
             print('{}{}'.format('分隔点: ', self.frequency_matrix_intervals))
-            print('{}{}'.format('卡方值: ', ', '.join([
-                '[{}-{}):{:5.1f}'.format(
-                    self.frequency_matrix_intervals[v[0][0]],
-                    '最大值' if v[0][1] > len(self.frequency_matrix_intervals) - 1 else self.frequency_matrix_intervals[
-                        v[0][1]],
-                    k)
-                for k, v in sort_dict_by_value(chitestvalues, False)])))
+            print('{}{}'.format(
+                '卡方值: ', ', '.join([
+                    '[{}-{}):{:5.1f}'.format(
+                        self.frequency_matrix_intervals[v[0][0]], '最大值'
+                        if v[0][1] > len(self.frequency_matrix_intervals) - 1
+                        else self.frequency_matrix_intervals[v[0][1]], k)
+                    for k, v in sort_dict_by_value(chitestvalues, False)
+                ])))
 
             final_frequency = pd.DataFrame(self.frequency_matrix)
 
@@ -1063,7 +1185,10 @@ class SKLTools:
           encoding of dictionary items or strings.
         """
 
-        def __init__(self, encoding='onehot', categories='auto', dtype=np.float64,
+        def __init__(self,
+                     encoding='onehot',
+                     categories='auto',
+                     dtype=np.float64,
                      handle_unknown='error'):
             self.encoding = encoding
             self.categories = categories
@@ -1082,8 +1207,9 @@ class SKLTools:
             """
 
             if self.encoding not in ['onehot', 'onehot-dense', 'ordinal']:
-                template = ("encoding should be either 'onehot', 'onehot-dense' "
-                            "or 'ordinal', got %s")
+                template = (
+                    "encoding should be either 'onehot', 'onehot-dense' "
+                    "or 'ordinal', got %s")
                 raise ValueError(template % self.handle_unknown)
 
             if self.handle_unknown not in ['error', 'ignore']:
@@ -1093,7 +1219,6 @@ class SKLTools:
 
             if self.encoding == 'ordinal' and self.handle_unknown == 'ignore':
                 raise ValueError("handle_unknown='ignore' is not supported for"
-
                                  " encoding='ordinal'")
 
             X = check_array(X, dtype=np.object, accept_sparse='csc', copy=True)
@@ -1120,7 +1245,6 @@ class SKLTools:
             return self
 
         def transform(self, X):
-
             """Transform X using one-hot encoding.
             Parameters
             ----------
@@ -1211,7 +1335,10 @@ class SKLTools:
             pred = np.array([model.predict(X) for model in self.models_])
             # for every data point, single model prediction times weight, then add them together
             for data in range(pred.shape[1]):
-                single = [pred[model, data] * weight for model, weight in zip(range(pred.shape[0]), self.weight)]
+                single = [
+                    pred[model, data] * weight
+                    for model, weight in zip(range(pred.shape[0]), self.weight)
+                ]
                 w.append(np.sum(single))
             return w
 
@@ -1254,8 +1381,11 @@ class SKLTools:
         def predict(self, X):
 
             X = Imputer().fit_transform(X)
-            whole_test = np.column_stack([np.column_stack(model.predict(X) for model in single_model).mean(axis=1)
-                                          for single_model in self.saved_model])
+            whole_test = np.column_stack([
+                np.column_stack(model.predict(X)
+                                for model in single_model).mean(axis=1)
+                for single_model in self.saved_model
+            ])
             return self.meta_model.predict(whole_test)
 
         def get_oof(self, X, y, test_X):
@@ -1271,7 +1401,8 @@ class SKLTools:
             test_single = np.zeros((test_X.shape[0], 5))
             test_mean = np.zeros((test_X.shape[0], len(self.mod)))
             for i, model in enumerate(self.mod):
-                for j, (train_index, val_index) in enumerate(self.kf.split(X, y)):
+                for j, (train_index,
+                        val_index) in enumerate(self.kf.split(X, y)):
                     clone_model = clone(model)
                     clone_model.fit(X[train_index], y[train_index])
                     oof[val_index, i] = clone_model.predict(X[val_index])
@@ -1301,15 +1432,24 @@ class AnalyzeTools:
             if target_col is not '':
                 class_tag = list(data_frame[target_col].drop_duplicates())
                 for cls in class_tag:
-                    freq_data_part = eval('data_frame[data_frame.%s == %s]' % (target_col, cls))
-                    freq_data = pd.DataFrame(freq_data_part[field_col].value_counts()).reset_index()
+                    freq_data_part = eval('data_frame[data_frame.%s == %s]' %
+                                          (target_col, cls))
+                    freq_data = pd.DataFrame(freq_data_part[field_col].
+                                             value_counts()).reset_index()
                     data.append((freq_data['index'], freq_data[field_col]))
 
-                ChartTools.plot_bar(data=data, traces=class_tag, title="Frequency_Analyze", barmode=barmode)
+                ChartTools.plot_bar(data=data,
+                                    traces=class_tag,
+                                    title="Frequency_Analyze",
+                                    barmode=barmode)
             else:
-                freq_data = pd.DataFrame(data_frame[field_col].value_counts()).reset_index()
+                freq_data = pd.DataFrame(
+                    data_frame[field_col].value_counts()).reset_index()
                 data.append((freq_data['index'], freq_data[field_col]))
-                ChartTools.plot_bar(data=data, traces=[field_col], title="Frequency_Analyze", barmode=barmode)
+                ChartTools.plot_bar(data=data,
+                                    traces=[field_col],
+                                    title="Frequency_Analyze",
+                                    barmode=barmode)
 
     @staticmethod
     def chi2_test(array, min_expected_value):
@@ -1342,7 +1482,9 @@ class AnalyzeTools:
         return chi2
 
     @staticmethod
-    def show_feature_importance(feature_list, importance_list, return_importance_df=False):
+    def show_feature_importance(feature_list,
+                                importance_list,
+                                return_importance_df=False):
         """
         统计特征重要性
         :param feature_list:特征名列表
@@ -1356,8 +1498,11 @@ class AnalyzeTools:
         feature_df['importance'] = importance_list
         feature_df.sort_values(by=['importance'], ascending=True, inplace=True)
 
-        ChartTools.plot_bar([(feature_df['importance'], feature_df['feature'])], traces=['importance'],
-                            title='feature_importance', orientation='h')
+        ChartTools.plot_bar(
+            [(feature_df['importance'], feature_df['feature'])],
+            traces=['importance'],
+            title='feature_importance',
+            orientation='h')
 
         if return_importance_df:
             return feature_df
@@ -1376,7 +1521,8 @@ class AnalyzeTools:
         np.set_printoptions(precision=2)
 
         if normalize:
-            cnf_matrix = cnf_matrix.astype('float') / cnf_matrix.sum(axis=1)[:, np.newaxis]
+            cnf_matrix = cnf_matrix.astype('float') / cnf_matrix.sum(
+                axis=1)[:, np.newaxis]
             title = "Normalized confusion matrix"
         else:
             title = "Confusion matrix"
@@ -1443,6 +1589,7 @@ class AnalyzeTools:
             return 0.
         a_or_b = a | b
         return 1. * len(a_and_b) / len(a_or_b)
+
 
 if __name__ == '__main__':
     # Scatter
