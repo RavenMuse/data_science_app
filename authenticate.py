@@ -194,7 +194,7 @@ class Authenticate:
             Username of the authenticated user.
         """
 
-        @st.cache()
+        @st.cache_data()
         def load_lottieurl(url: str):
             r = requests.get(url)
             if r.status_code != 200:

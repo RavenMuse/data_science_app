@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import streamlit_authenticator as stauth
-from pandasql import sqldf
+import duckdb
 from streamlit_ace import st_ace
 from datetime import datetime, timedelta
 from authenticate import Authenticate
@@ -92,7 +92,7 @@ class DataToolsApp:
                          height=180)
 
         try:
-            data = sqldf(sql, locals())
+            data = duckdb.sql(sql).df()
         except:
             st.error('无效的查询！')
             st.stop()
@@ -147,7 +147,7 @@ class DataToolsApp:
         st.write(data)
 
         # 数据下载保存
-        @st.cache
+        @st.cache_data()
         def convert_df(data):
             return data.to_csv(index=False, encoding='utf_8_sig')
 
